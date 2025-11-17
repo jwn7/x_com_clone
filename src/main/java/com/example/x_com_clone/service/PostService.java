@@ -24,9 +24,15 @@ public class PostService {
      * 새 게시물 작성
      */
     public void createPost(String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("내용이 비어있습니다.");
+        }
+
+        // 나중에 Post 엔티티에 맞춰서 필드만 채우면 됨
         Post post = Post.builder()
-                .content(content)
-                .build();  // createdAt은 엔티티 @PrePersist에서 자동 세팅
+                .content(content)   // Post에 content 필드가 있다고 가정
+                .build();
+
         postRepository.save(post);
     }
 
@@ -35,8 +41,7 @@ public class PostService {
      */
     public List<Post> searchPosts(String keyword) {
         if (keyword == null || keyword.isBlank()) {
-            // 검색어 없으면 전체 목록 리턴
-            return findAllPosts();
+            return findAllPosts();  // 검색어 없으면 전체 목록
         }
         return postRepository.findByContentContainingIgnoreCaseOrderByCreatedAtDesc(keyword);
     }
