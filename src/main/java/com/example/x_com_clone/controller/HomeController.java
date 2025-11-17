@@ -1,14 +1,43 @@
 package com.example.x_com_clone.controller;
 
+import com.example.x_com_clone.service.PostService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
 
-@Controller // 이 클래스가 HTTP 요청을 처리하는 컨트롤러임을 명시
+@Controller
+@RequiredArgsConstructor
 public class HomeController {
 
-    // 루트 URL ("/") 요청이 오면 이 메서드가 처리합니다.
+    private final PostService postService;
+
     @GetMapping("/")
-    public String home() {
-        return "index"; // src/main/resources/templates/index.html 템플릿 반환
+    public String home(Model model) {
+        model.addAttribute("posts", postService.findAllPosts());
+        return "home"; // templates/home.html
+    }
+
+    @GetMapping("/mypage")
+    public String myPage() {
+        return "mypage"; // templates/mypage.html
+    }
+
+    @GetMapping("/posts/new")
+    public String showCreatePostForm() {
+        return "post-create"; // templates/post-create.html
+    }
+
+    @PostMapping("/posts")
+    public String createPost(@RequestParam("content") String content) {
+        postService.createPost(content);
+        return "redirect:/";
+    }
+
+    @GetMapping("/search")
+    public String search(@RequestParam("keyword") String keyword, Model model) {
+        model.addAttribute("posts", postService.searchPosts(keyword));
+        model.addAttribute("keyword", keyword);
+        return "home";
     }
 }
