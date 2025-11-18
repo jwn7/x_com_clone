@@ -1,13 +1,17 @@
 package com.example.x_com_clone.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Entity                          //
-@Table(name = "posts")           // DB 테이블 이름 (Posts/ posts 중 실제 이름에 맞게)
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "posts")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Post {
 
     @Id
@@ -23,5 +27,8 @@ public class Post {
     private String content;
 
     @Column(name = "created_at")
-    private java.time.LocalDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    // ❌ 이거 절대 두면 안 됨
+    // public static JsonInclude builder() {}
 }

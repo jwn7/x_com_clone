@@ -1,7 +1,7 @@
 package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.dto.UserSignupRequest;
-import com.example.x_com_clone.Service.UserService;
+import com.example.x_com_clone.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

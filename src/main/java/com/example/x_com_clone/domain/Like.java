@@ -28,7 +28,7 @@ public class Like {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("postId")  // LikeId.postId 매핑
     @JoinColumn(name = "post_id", nullable = false)
-    private com.example.x_com_clone.domain.PostService post;
+    private com.example.x_com_clone.domain.Post post;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -15,7 +15,7 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("posts", postService.findAllPosts());
-        return "home"; // templates/home.html
+        return "index"; // templates/home.html
     }
 
     @GetMapping("/mypage")
@@ -38,6 +38,6 @@ public class HomeController {
     public String search(@RequestParam("keyword") String keyword, Model model) {
         model.addAttribute("posts", postService.searchPosts(keyword));
         model.addAttribute("keyword", keyword);
-        return "home";
+        return "index";
     }
 }
