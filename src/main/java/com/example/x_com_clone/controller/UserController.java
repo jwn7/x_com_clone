@@ -1,7 +1,7 @@
 package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.dto.UserSignupRequest;
-import com.example.x_com_clone.service.UserService;
+import com.example.x_com_clone.Service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,23 +17,20 @@ public class UserController {
     // --- 1. 회원가입 화면 보여주기 (GET /users/signup) ---
     @GetMapping("/signup")
     public String signupForm(Model model) {
-        // Thymeleaf가 폼을 바인딩할 객체를 미리 전달
         model.addAttribute("signupRequest", new UserSignupRequest());
-        return "signup"; // templates/signup.html 템플릿 반환
+        return "signup";
     }
 
     // --- 2. 회원가입 데이터 처리 (POST /users/signup) ---
     @PostMapping("/signup")
     public String signup(@ModelAttribute("signupRequest") UserSignupRequest request, Model model) {
         try {
-            // Service 계층의 비즈니스 로직 호출
-            userService.signup(request.getUsername(), request.getEmail(), request.getPassword());
+            // 💡 수정된 부분: DTO 객체 전체를 서비스로 전달
+            userService.signup(request);
 
-            // 성공 시 리다이렉트
-            return "redirect:/users/login-success";
+            return "redirect:/";
 
         } catch (IllegalStateException e) {
-            // 중복 등의 예외 발생 시 에러 메시지를 모델에 담아 다시 회원가입 페이지로
             model.addAttribute("errorMessage", e.getMessage());
             return "signup";
         }
@@ -42,6 +39,6 @@ public class UserController {
     // 임시 성공 페이지 렌더링
     @GetMapping("/login-success")
     public String successPage() {
-        return "success"; // templates/success.html 템플릿 반환
+        return "success";
     }
 }

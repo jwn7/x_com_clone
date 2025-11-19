@@ -1,4 +1,4 @@
-package com.example.x_com_clone.service;
+package com.example.x_com_clone.Service;
 
 import com.example.x_com_clone.domain.Post;
 import com.example.x_com_clone.repository.PostRepository;

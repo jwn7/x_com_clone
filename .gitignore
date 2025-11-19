@@ -4,7 +4,9 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-
+### Spring Boot & Configuration ###
+/src/main/resources/application.properties
+/src/main/resources/application-*.properties
 ### STS ###
 .apt_generated
 .classpath

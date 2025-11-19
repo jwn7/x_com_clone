@@ -1,6 +1,6 @@
 package com.example.x_com_clone.controller;
 
-import com.example.x_com_clone.service.PostService;
+import com.example.x_com_clone.Service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
