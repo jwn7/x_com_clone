@@ -29,6 +29,4 @@ public class Post {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // ❌ 이거 절대 두면 안 됨
-    // public static JsonInclude builder() {}
 }
