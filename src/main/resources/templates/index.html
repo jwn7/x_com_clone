@@ -5,6 +5,7 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
         .links a { margin: 0 15px; text-decoration: none; color: #1DA1F2; font-weight: bold; font-size: 1.2em; }
+        .user-info { font-size: 1.1em; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -13,9 +14,18 @@
 
 <h2>시작하기</h2>
 <div class="links">
-    <a th:href="@{/users/signup}">회원가입</a>
 
-    <a href="#">로그인 (미구현)</a>
+    <div th:if="${currentUser}" class="user-info">
+        <p th:text="|환영합니다, ${currentUser.username}님!|"></p>
+
+        <a th:href="@{/users/logout}" style="color: red;">로그아웃</a>
+    </div>
+
+    <div th:unless="${currentUser}">
+        <a th:href="@{/users/signup}">회원가입</a>
+        <a th:href="@{/users/login}">로그인</a>
+    </div>
+
 </div>
 </body>
 </html>

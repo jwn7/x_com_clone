@@ -26,6 +26,7 @@ public class User {
     private String email;
 
     // 💡 수정된 부분: DB 컬럼 이름이 'password_hash'일 경우 이렇게 명시해야 합니다.
+    @Setter(AccessLevel.PROTECTED)
     @Column(name = "password_hash", nullable = false, length = 60)
     private String passwordHash;
 
@@ -43,5 +44,11 @@ public class User {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.createdAt = LocalDateTime.now();
+    }
+    public void updateProfile(String newUsername, String newBio, String newProfileImageUrl) {
+        this.username = newUsername;
+        this.bio = newBio;
+        this.profileImageUrl = newProfileImageUrl;
     }
 }

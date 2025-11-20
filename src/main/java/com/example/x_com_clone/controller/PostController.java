@@ -1,7 +1,7 @@
 package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.domain.Post;
-import com.example.x_com_clone.Service.PostService;
+import com.example.x_com_clone.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
