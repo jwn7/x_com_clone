@@ -5,6 +5,7 @@ import com.example.x_com_clone.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -14,35 +15,51 @@ public class PostService {
     private final PostRepository postRepository;
 
     /**
-     * 전체 게시물을 최신순으로 조회
+     * 홈 화면에서 전체 게시물 최신순 조회
      */
     public List<Post> findAllPosts() {
         return postRepository.findAllByOrderByCreatedAtDesc();
     }
 
     /**
-     * 새 게시물 작성
-     */
-    public void createPost(String content) {
-        if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("내용이 비어있습니다.");
-        }
-
-        // 나중에 Post 엔티티에 맞춰서 필드만 채우면 됨
-        Post post = Post.builder()
-                .content(content)   // Post에 content 필드가 있다고 가정
-                .build();
-
-        postRepository.save(post);
-    }
-
-    /**
-     * 게시물 검색
+     * 검색: keyword 포함 글들 최신순
+     * HomeController의 search()에서 사용
      */
     public List<Post> searchPosts(String keyword) {
         if (keyword == null || keyword.isBlank()) {
-            return findAllPosts();  // 검색어 없으면 전체 목록
+            return findAllPosts();
         }
         return postRepository.findByContentContainingIgnoreCaseOrderByCreatedAtDesc(keyword);
     }
+
+    /**
+     * 폼에서 content 문자열만 넘어오는 경우
+     * HomeController의 createPost()에서 사용
+     */
+    public Post createPost(String content) {
+        Post post = Post.builder()
+                .content(content)
+                // TODO: 나중에 로그인 붙으면 여기서 user 넣어주기
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return postRepository.save(post);
+    }
+
+    // 필요하면 나중에 Post 객체 직접 받는 버전도 같이 둘 수 있음
+    public Post createPost(Post post) {
+        if (post.getCreatedAt() == null) {
+            post.setCreatedAt(LocalDateTime.now());
+        }
+        return postRepository.save(post);
+    }
+
+    public void deletePost(Long postId) {
+        if (!postRepository.existsById(postId)) {
+            // 못 찾았을 때 그냥 조용히 넘어가고 싶으면 이 if 블록을 통째로 지워도 됨
+            throw new IllegalArgumentException("Post not found. id=" + postId);
+        }
+        postRepository.deleteById(postId);
+    }
+
 }
