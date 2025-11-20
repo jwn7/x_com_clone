@@ -1,4 +1,4 @@
-package com.example.x_com_clone.Service;
+package com.example.x_com_clone.service;
 
 import com.example.x_com_clone.domain.User;
 import com.example.x_com_clone.dto.UserSignupRequest; // 💡 DTO 임포트 추가
