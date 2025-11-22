@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="|${profileUser.username} - X.com Clone|">X.com Clone - Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #E7E9EA;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .profile-container {
+            width: 100%;
+            max-width: 600px;
+            min-height: 100vh;
+            border-left: 1px solid #2F3336;
+            border-right: 1px solid #2F3336;
+        }
+        .header {
+            border-bottom: 1px solid #2F3336;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: #000000;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+<div class="profile-container">
+    <div class="header">
+        <span th:text="${profileUser.username}">Username</span>
+        <div class="text-sm font-normal" style="color: #71767B;">@<span th:text="${profileUser.username}">Username</span></div>
+    </div>
+
+    <div style="padding: 20px;">
+        <h3 class="text-2xl font-bold mb-2" th:text="${profileUser.username}">Username</h3>
+        <p class="text-sm mb-4" style="color: #71767B;">@<span th:text="${profileUser.username}">Username</span></p>
+
+        <p class="mt-8">여기는 프로필 정보 및 해당 사용자가 작성한 게시물 목록이 표시될 공간입니다.</p>
+
+        <div class="mt-10">
+            <a href="/" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

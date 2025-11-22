@@ -1,31 +1,300 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>X.com Clone - 메인</title>
+    <meta charset="UTF-8">
+    <title>X.com Clone - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
-        .links a { margin: 0 15px; text-decoration: none; color: #1DA1F2; font-weight: bold; font-size: 1.2em; }
-        .user-info { font-size: 1.1em; margin-bottom: 20px; }
+        /* 기본 CSS 초기화 및 설정 */
+        body {
+            background-color: #000000;
+            color: #E7E9EA;
+            font-family: 'Inter', sans-serif; /* Tailwind 기본 폰트 사용 */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .main-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 100vh;
+        }
+        .left-sidebar {
+            width: 250px;
+            padding: 10px;
+            border-right: 1px solid #2F3336;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        .timeline {
+            flex-grow: 1;
+            max-width: 600px;
+            border-right: 1px solid #2F3336;
+            min-height: 100vh;
+        }
+        .header {
+            border-bottom: 1px solid #2F3336;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: #000000;
+            z-index: 50;
+        }
+        .post-card {
+            border-bottom: 1px solid #2F3336;
+            padding: 15px;
+            transition: background-color 0.2s;
+        }
+        .post-card:hover {
+            background-color: #080808;
+        }
+        .post-info {
+            color: #71767B;
+            font-size: 14px;
+        }
+        .post-content {
+            margin-top: 5px;
+            white-space: pre-wrap;
+        }
+        .action-button {
+            color: white;
+            background-color: #1DA1F2;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: bold;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+            transition: background-color 0.2s;
+        }
+        .action-button:hover {
+            background-color: #158acb;
+        }
+
+        /* 게시물 입력 영역 */
+        .post-input-area textarea {
+            box-sizing: border-box;
+            width: 100%;
+            resize: none;
+            border: none;
+            background: transparent;
+            color: #E7E9EA;
+            font-size: 18px;
+            outline: none;
+            padding: 10px 0;
+            min-height: 80px;
+        }
+        .success-banner {
+            background-color: #1a8cd8;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-<h1>🐦 X.com Clone 프로젝트</h1>
-<p>간소화된 핵심 기능 구현을 시작합니다.</p>
 
-<h2>시작하기</h2>
-<div class="links">
+<div class="main-container">
 
-    <div th:if="${currentUser}" class="user-info">
-        <p th:text="|환영합니다, ${currentUser.username}님!|"></p>
-
-        <a th:href="@{/users/logout}" style="color: red;">로그아웃</a>
+    <!-- 회원가입 성공 알림 영역 (Flash Attribute) -->
+    <div th:if="${signupSuccessMessage}" class="success-banner"
+         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100;">
+        <p th:text="${signupSuccessMessage}" style="margin: 0;"></p>
     </div>
 
-    <div th:unless="${currentUser}">
-        <a th:href="@{/users/signup}">회원가입</a>
-        <a th:href="@{/users/login}">로그인</a>
+    <!-- 1. 왼쪽 네비게이션 바 -->
+    <div class="left-sidebar">
+        <h2 class="text-3xl font-extrabold mb-6 text-white">X.com</h2>
+
+        <div th:if="${currentUser == null}">
+            <a th:href="@{/users/login}" class="action-button">로그인</a>
+            <a th:href="@{/users/signup}" class="action-button" style="background-color: #000000; border: 1px solid #1DA1F2;">회원가입</a>
+        </div>
+        <div th:if="${currentUser != null}">
+            <p class="text-lg font-bold">환영합니다, <span th:text="${currentUser.username}">User</span>님!</p>
+
+            <!-- 현재 사용자 프로필 링크 -->
+            <a th:href="@{/users/profile/{username}(username=${currentUser.username})}"
+               class="text-sm block hover:underline"
+               style="color: #71767B; text-decoration: none;">
+                @<span th:text="${currentUser.username}"></span>
+            </a>
+
+            <a th:href="@{/users/logout}" class="action-button mt-4" style="background-color: #555;">로그아웃</a>
+        </div>
+    </div>
+
+    <!-- 2. 중앙 타임라인 -->
+    <div class="timeline">
+        <div class="header">홈</div>
+
+        <!-- 게시물 생성 폼 (Create) -->
+        <div th:if="${currentUser != null}" class="post-input-area"
+             style="padding: 15px; border-bottom: 8px solid #2F3336;">
+
+            <form id="postForm" onsubmit="createPost(event)">
+                <textarea
+                        id="postContent"
+                        name="content"
+                        rows="3"
+                        placeholder="무슨 일이 일어나고 있나요?"
+                ></textarea>
+
+                <div style="text-align: right; border-top: 1px solid #2F3336; padding-top: 10px;">
+                    <button id="postSubmitButton" type="submit"
+                            style="background-color: #1DA1F2; color: white; padding: 8px 16px; border: none; border-radius: 9999px; font-weight: bold; cursor: pointer;">
+                        게시하기
+                    </button>
+                </div>
+            </form>
+        </div>
+        <!--// 게시물 생성 폼 끝 -->
+
+        <!-- 게시물 없을 때 (Read) -->
+        <div th:if="${posts.isEmpty()}" class="no-posts" style="padding: 20px; text-align: center; color: #71767B;">
+            <p>아직 게시물이 없습니다.</p>
+        </div>
+
+        <!-- 게시물 목록 (Read) -->
+        <div th:each="post : ${posts}" class="post-card"
+             th:id="|post-${post.postId}|">
+
+            <!-- 프로필 링크 -->
+            <div class="post-info flex items-center">
+                <a th:href="@{/users/profile/{username}(username=${post.user.username})}"
+                   class="profile-link flex items-center hover:text-gray-200"
+                   style="text-decoration: none; color: inherit;">
+                    <span th:text="${post.user.username}" class="font-bold hover:underline">Display Name</span>
+                    <span style="font-weight: normal; color: #71767B; margin-left: 5px;">@<span th:text="${post.user.username}">Username</span></span>
+                </a>
+                <span style="color: #71767B; margin-left: 5px;">·</span>
+                <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}" style="color: #71767B; margin-left: 5px;">시간</span>
+            </div>
+
+            <div class="post-content">
+                <p th:text="${post.content}">여기에 포스트 내용이 들어갑니다.</p>
+            </div>
+
+            <!-- 삭제 버튼 (Delete) -->
+            <button
+                    th:if="${currentUser != null and post.user.userId == currentUser.userId}"
+                    th:data-post-id="${post.postId}"
+                    onclick="deletePost(this.getAttribute('data-post-id'))"
+                    style="background: transparent; color: #F4212E; border: none; cursor: pointer; font-size: 14px; margin-top: 10px;">
+                삭제
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. 오른쪽 위젯/트렌드 섹션 -->
+    <div class="right-sidebar" style="width: 350px; padding: 10px;">
+        <p style="color: #71767B;">트렌드 위젯 영역</p>
     </div>
 
 </div>
+
+
+<!-- JavaScript CRUD Functions -->
+<script>
+
+    // Helper function to show a custom message box instead of alert()
+    function showMessage(message) {
+        console.log("Message: " + message);
+        // Note: Using alert() for immediate feedback in this environment. In a production setting, replace with a custom modal/toast.
+        alert(message);
+    }
+
+    // --- CRUD Functions ---
+
+    /**
+     * 게시물을 생성하는 함수 (Create)
+     * POST /posts 엔드포인트 호출
+     */
+    async function createPost(event) {
+        event.preventDefault();
+
+        const content = document.getElementById('postContent').value.trim();
+
+        if (content === "") {
+            showMessage("게시물 내용을 입력해 주세요.");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/posts', { // 요청 경로: /posts
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: content })
+            });
+
+            if (response.ok) {
+                // 성공하면 페이지를 새로고침하여 새로운 게시물을 불러옴
+                window.location.reload();
+            } else if (response.status === 401) {
+                showMessage("로그인이 필요합니다.");
+            } else if (response.status === 404) {
+                // 서버가 /posts 경로를 찾지 못했을 때의 구체적인 메시지 처리
+                showMessage("게시물 작성 실패: 요청 경로(/posts)를 서버가 찾을 수 없습니다. (404 Not Found)");
+            } else {
+                const errorText = await response.text();
+                // 서버가 보내온 구체적인 오류 메시지를 출력
+                showMessage("게시물 작성 실패: " + (errorText.length > 100 ? response.statusText : errorText));
+            }
+        } catch (error) {
+            console.error('Error creating post:', error);
+            showMessage("네트워크 오류 또는 서버 접속 실패가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 게시물을 삭제하는 함수 (Delete)
+     * DELETE /posts/{postId} 엔드포인트 호출
+     */
+    async function deletePost(postId) {
+        // 커스텀 모달이 없으므로 confirm 사용
+        if (!confirm('정말 이 게시물을 삭제하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const postElement = document.getElementById(`post-${postId}`);
+                if (postElement) {
+                    postElement.remove();
+                }
+                showMessage("게시물이 성공적으로 삭제되었습니다.");
+            } else if (response.status === 403) {
+                showMessage("삭제 권한이 없습니다. 본인의 게시물만 삭제할 수 있습니다.");
+            } else if (response.status === 404) {
+                showMessage("게시물을 찾을 수 없습니다.");
+            } else {
+                const errorText = await response.text();
+                showMessage("게시물 삭제 실패: " + errorText);
+            }
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            showMessage("네트워크 오류가 발생했습니다.");
+        }
+    }
+</script>
+
 </body>
 </html>
