@@ -2,13 +2,14 @@ package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.domain.Post;
 import com.example.x_com_clone.domain.User;
-import com.example.x_com_clone.dto.PostCreateRequest;
 import com.example.x_com_clone.service.PostService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;       // ⬅ 추가
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile; // ⬅ 추가
 
 import java.util.List;
 
@@ -30,9 +31,13 @@ public class PostController {
         return ResponseEntity.ok(postService.searchPosts(keyword));
     }
 
-    // --- 2. 게시물 생성 ---
-    @PostMapping
-    public ResponseEntity<Post> createPost(@RequestBody PostCreateRequest request, HttpSession session) {
+    // --- 2. 게시물 생성 (텍스트 + 이미지) ---
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Post> createPost(
+            @RequestPart("content") String content,                          // 글 내용
+            @RequestPart(value = "files", required = false) List<MultipartFile> files, // 이미지 파일들
+            HttpSession session
+    ) {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
@@ -40,11 +45,27 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
         }
 
-        // currentUser.getUserId()는 User 엔티티에 postId가 있어야 작동
+        Post newPost = postService.createPost(currentUser.getUserId(), content, files);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(newPost); // 201
+    }
+
+    // 🔸 만약 JSON으로만 올리는 기존 방식도 유지하고 싶다면 아래처럼 별도 엔드포인트 둬도 됨
+    /*
+    @PostMapping(path = "/json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Post> createPostJson(@RequestBody PostCreateRequest request, HttpSession session) {
+
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+        }
+
         Post newPost = postService.createPost(currentUser.getUserId(), request.getContent());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newPost); // 201
     }
+    */
 
     // --- 3. 게시물 삭제 ---
     @DeleteMapping("/{id}")

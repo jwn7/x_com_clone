@@ -1,23 +1,24 @@
 package com.example.x_com_clone.service;
 
 import com.example.x_com_clone.domain.Post;
-import com.example.x_com_clone.domain.User; // User 엔티티 import 필요
+import com.example.x_com_clone.domain.User;
 import com.example.x_com_clone.repository.PostRepository;
-import com.example.x_com_clone.repository.UserRepository; // 💡 UserRepository import 필요
-import jakarta.transaction.Transactional; // 💡 Transactional import 필요
+import com.example.x_com_clone.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile; // ⬅ 추가
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException; // 예외 처리용
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
-    private final UserRepository userRepository; // 💡 UserRepository 주입
+    private final UserRepository userRepository;
+    private final MediaService mediaService; // ⬅ MediaService 주입 (이미 만들어놨다고 가정)
 
     // --- 1. 조회 및 검색 (기존 유지) ---
 
@@ -44,28 +45,40 @@ public class PostService {
      * 새로운 게시물을 생성하고 DB에 저장합니다.
      * @param userId 현재 로그인한 사용자의 ID (세션에서 가져옴)
      * @param content 게시물 내용
+     * @param files 첨부할 이미지 파일들 (없으면 null 또는 빈 리스트)
      * @return 생성된 Post 객체
      */
     @Transactional
-    public Post createPost(Long userId, String content) {
+    public Post createPost(Long userId, String content, List<MultipartFile> files) {
 
         // 1. User ID를 사용하여 User 엔티티를 찾습니다.
-        // Optional을 사용하지 않고 get()을 바로 사용하면, 존재하지 않을 경우 NoSuchElementException 발생
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
-        // 2. Post 엔티티 생성 (User 객체와 content를 사용)
+        // 2. Post 엔티티 생성
         Post post = Post.builder()
-                .user(user) // 💡 User 객체를 직접 연결
+                .user(user)
                 .content(content)
-                .build(); // createdAt은 Post 엔티티에서 자동으로 설정됨
+                .build(); // createdAt은 엔티티에서 자동 설정된다고 가정
 
-        // 3. 저장 및 반환
-        return postRepository.save(post);
+        // 3. 게시물 저장
+        Post savedPost = postRepository.save(post);
+
+        // 4. 파일이 있다면 Media 저장
+        if (files != null && !files.isEmpty()) {
+            mediaService.uploadMedia(savedPost, files);
+        }
+
+        return savedPost;
     }
 
-    // 💡 기존 createPost(String content) 메서드는 사용되지 않으므로 제거합니다.
-    // 💡 기존 createPost(Post post) 메서드도 API에서 사용하지 않으므로 제거합니다.
+    /**
+     * 파일 없이 텍스트만 올리는 기존 API가 필요하면 이 오버로드를 써도 됨
+     */
+    @Transactional
+    public Post createPost(Long userId, String content) {
+        return createPost(userId, content, null);
+    }
 
     // --- 3. 게시물 삭제 (Delete with Authority Check) ---
 
@@ -81,7 +94,7 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found. id=" + postId));
 
-        // 2. 권한 검증: 현재 사용자의 ID와 게시물 작성자의 ID를 비교합니다.
+        // 2. 권한 검증
         Long postAuthorId = post.getUser().getUserId();
 
         if (!postAuthorId.equals(currentUserId)) {
@@ -91,7 +104,5 @@ public class PostService {
         // 3. 삭제 실행
         postRepository.delete(post);
     }
-
-    // 💡 기존 deletePost(Long postId) 메서드는 권한 검증이 없어 사용되지 않으므로 제거합니다.
 
 }

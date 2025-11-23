@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "posts")
@@ -31,15 +33,21 @@ public class Post {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // 🔥 새로 추가: Post 1개에 여러 Media (1:N)
+    @OneToMany(mappedBy = "post",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private List<Media> mediaList = new ArrayList<>();
 
     // --- 💡 비즈니스 로직용 Builder 생성자 ---
     // User 객체를 직접 받아 연관관계를 설정합니다.
     @Builder
-    public Post(User user, String content) {
+    public Post(User user, String content, LocalDateTime createdAt, List<Media> mediaList) {
         this.user = user;
         this.content = content;
-        // createdAt은 필드 초기화 시 자동으로 설정됩니다.
-        // this.createdAt = LocalDateTime.now();
+        this.createdAt = (createdAt != null) ? createdAt : LocalDateTime.now();
+        this.mediaList = (mediaList != null) ? mediaList : new ArrayList<>();
     }
 
     // --- (선택적) 생성/업데이트 시점 자동화 리스너 ---

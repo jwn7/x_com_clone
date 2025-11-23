@@ -107,7 +107,7 @@
 
     <!-- 회원가입 성공 알림 영역 (Flash Attribute) -->
     <div th:if="${signupSuccessMessage}" class="success-banner"
-         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100;">
+         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100%;">
         <p th:text="${signupSuccessMessage}" style="margin: 0;"></p>
     </div>
 
@@ -141,13 +141,24 @@
         <div th:if="${currentUser != null}" class="post-input-area"
              style="padding: 15px; border-bottom: 8px solid #2F3336;">
 
-            <form id="postForm" onsubmit="createPost(event)">
+            <!-- multipart/form-data 로 FormData 전송 -->
+            <form id="postForm" onsubmit="createPost(event)" enctype="multipart/form-data">
+
                 <textarea
                         id="postContent"
                         name="content"
                         rows="3"
                         placeholder="무슨 일이 일어나고 있나요?"
                 ></textarea>
+
+                <!-- 이미지 파일 업로드 -->
+                <input
+                        id="postFiles"
+                        type="file"
+                        name="files"
+                        multiple
+                        style="margin-top: 10px; color: #E7E9EA;"
+                >
 
                 <div style="text-align: right; border-top: 1px solid #2F3336; padding-top: 10px;">
                     <button id="postSubmitButton" type="submit"
@@ -184,6 +195,14 @@
                 <p th:text="${post.content}">여기에 포스트 내용이 들어갑니다.</p>
             </div>
 
+            <!-- 첨부 이미지 영역 -->
+            <div class="post-images" th:if="${post.mediaList != null}">
+                <img th:each="media : ${post.mediaList}"
+                     th:src="@{${media.fileUrl}}"
+                     alt="첨부 이미지"
+                     style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
+            </div>
+
             <!-- 삭제 버튼 (Delete) -->
             <button
                     th:if="${currentUser != null and post.user.userId == currentUser.userId}"
@@ -217,38 +236,46 @@
 
     /**
      * 게시물을 생성하는 함수 (Create)
-     * POST /posts 엔드포인트 호출
+     * POST /api/posts 엔드포인트 호출 (multipart/form-data)
      */
     async function createPost(event) {
         event.preventDefault();
 
         const content = document.getElementById('postContent').value.trim();
+        const fileInput = document.getElementById('postFiles');
+        const files = fileInput ? fileInput.files : [];
 
-        if (content === "") {
-            showMessage("게시물 내용을 입력해 주세요.");
+        if (content === "" && (!files || files.length === 0)) {
+            showMessage("게시물 내용이나 이미지를 하나 이상 입력해 주세요.");
             return;
         }
 
+        // FormData 사용
+        const formData = new FormData();
+        formData.append("content", content);
+
+        // 여러 파일 추가
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                formData.append("files", files[i]);
+            }
+        }
+
         try {
-            const response = await fetch('/api/posts', { // 요청 경로: /posts
+            const response = await fetch('/api/posts', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content: content })
+                // ⚠️ FormData 쓸 때는 Content-Type을 직접 설정하지 않는다!
+                body: formData
             });
 
             if (response.ok) {
-                // 성공하면 페이지를 새로고침하여 새로운 게시물을 불러옴
                 window.location.reload();
             } else if (response.status === 401) {
                 showMessage("로그인이 필요합니다.");
             } else if (response.status === 404) {
-                // 서버가 /posts 경로를 찾지 못했을 때의 구체적인 메시지 처리
-                showMessage("게시물 작성 실패: 요청 경로(/posts)를 서버가 찾을 수 없습니다. (404 Not Found)");
+                showMessage("게시물 작성 실패: 서버에서 경로(/api/posts)를 찾을 수 없습니다. (404 Not Found)");
             } else {
                 const errorText = await response.text();
-                // 서버가 보내온 구체적인 오류 메시지를 출력
                 showMessage("게시물 작성 실패: " + (errorText.length > 100 ? response.statusText : errorText));
             }
         } catch (error) {
@@ -259,7 +286,7 @@
 
     /**
      * 게시물을 삭제하는 함수 (Delete)
-     * DELETE /posts/{postId} 엔드포인트 호출
+     * DELETE /api/posts/{postId} 엔드포인트 호출
      */
     async function deletePost(postId) {
         // 커스텀 모달이 없으므로 confirm 사용
