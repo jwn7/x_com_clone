@@ -107,7 +107,7 @@
 
     <!-- 회원가입 성공 알림 영역 (Flash Attribute) -->
     <div th:if="${signupSuccessMessage}" class="success-banner"
-         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100;">
+         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100%;">
         <p th:text="${signupSuccessMessage}" style="margin: 0;"></p>
     </div>
 
@@ -141,13 +141,24 @@
         <div th:if="${currentUser != null}" class="post-input-area"
              style="padding: 15px; border-bottom: 8px solid #2F3336;">
 
-            <form id="postForm" onsubmit="createPost(event)">
+            <!-- multipart/form-data 로 FormData 전송 -->
+            <form id="postForm" onsubmit="createPost(event)" enctype="multipart/form-data">
+
                 <textarea
                         id="postContent"
                         name="content"
                         rows="3"
                         placeholder="무슨 일이 일어나고 있나요?"
                 ></textarea>
+
+                <!-- 이미지 파일 업로드 -->
+                <input
+                        id="postFiles"
+                        type="file"
+                        name="files"
+                        multiple
+                        style="margin-top: 10px; color: #E7E9EA;"
+                >
 
                 <div style="text-align: right; border-top: 1px solid #2F3336; padding-top: 10px;">
                     <button id="postSubmitButton" type="submit"
@@ -168,20 +179,32 @@
         <div th:each="post : ${posts}" class="post-card"
              th:id="|post-${post.postId}|">
 
-            <!-- 프로필 링크 -->
+            <!-- 프로필 링크 / 작성자 / 시간 -->
             <div class="post-info flex items-center">
                 <a th:href="@{/users/profile/{username}(username=${post.user.username})}"
                    class="profile-link flex items-center hover:text-gray-200"
                    style="text-decoration: none; color: inherit;">
                     <span th:text="${post.user.username}" class="font-bold hover:underline">Display Name</span>
-                    <span style="font-weight: normal; color: #71767B; margin-left: 5px;">@<span th:text="${post.user.username}">Username</span></span>
+                    <span style="font-weight: normal; color: #71767B; margin-left: 5px;">
+                        @<span th:text="${post.user.username}">Username</span>
+                    </span>
                 </a>
                 <span style="color: #71767B; margin-left: 5px;">·</span>
-                <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}" style="color: #71767B; margin-left: 5px;">시간</span>
+                <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}"
+                      style="color: #71767B; margin-left: 5px;">시간</span>
             </div>
 
+            <!-- 게시물 내용 -->
             <div class="post-content">
                 <p th:text="${post.content}">여기에 포스트 내용이 들어갑니다.</p>
+            </div>
+
+            <!-- 첨부 이미지 영역 -->
+            <div class="post-images" th:if="${post.mediaList != null}">
+                <img th:each="media : ${post.mediaList}"
+                     th:src="@{${media.fileUrl}}"
+                     alt="첨부 이미지"
+                     style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
             </div>
 
             <!-- 삭제 버튼 (Delete) -->
@@ -192,7 +215,86 @@
                     style="background: transparent; color: #F4212E; border: none; cursor: pointer; font-size: 14px; margin-top: 10px;">
                 삭제
             </button>
+
+            <!-- ========================= -->
+            <!-- 좋아요 & 댓글 영역 (신규) -->
+            <!-- ========================= -->
+            <div style="margin-top: 10px; border-top: 1px solid #2F3336; padding-top: 10px; font-size: 14px;">
+
+                <!-- 좋아요 / 댓글 개수 표시 -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+
+                    <!-- 좋아요 버튼 (로그인한 경우만) -->
+                    <form th:if="${currentUser != null}"
+                          th:action="@{|/posts/${post.postId}/like|}"
+                          method="post"
+                          style="display: inline;">
+                        <input type="hidden" name="userId"
+                               th:value="${currentUser.userId}" />
+                        <button type="submit"
+                                style="background: transparent; border: none; color: #E7E9EA; cursor: pointer;">
+                            ❤️
+                            <span th:text="${#lists.size(post.likes)}">0</span>
+                        </button>
+                    </form>
+
+                    <!-- 비로그인일 때는 숫자만 -->
+                    <span th:if="${currentUser == null}">
+                        ❤️ <span th:text="${#lists.size(post.likes)}">0</span>
+                    </span>
+
+                    <!-- 댓글 개수 -->
+                    <span style="color: #71767B; margin-left: 10px;">
+                        💬 <span th:text="${#lists.size(post.replies)}">0</span> 댓글
+                    </span>
+                </div>
+
+                <!-- 댓글 목록 -->
+                <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid #2F3336;"
+                     th:if="${post.replies != null and !post.replies.isEmpty()}">
+                    <div th:each="reply : ${post.replies}" style="margin-bottom: 4px;">
+                        <b th:text="${reply.user.username}">user</b>
+                        <span style="color: #71767B; font-size: 12px; margin-left: 4px;"
+                              th:text="${#temporals.format(reply.createdAt, 'MM-dd HH:mm')}">
+                            11-24 13:20
+                        </span>
+                        <div th:text="${reply.content}" style="margin-left: 4px;"></div>
+                    </div>
+                </div>
+
+                <!-- 댓글 작성 폼 (로그인한 경우만) -->
+                <form th:if="${currentUser != null}"
+                      th:action="@{|/posts/${post.postId}/reply|}"
+                      method="post"
+                      style="margin-top: 8px; display: flex; gap: 6px;">
+
+                    <input type="hidden" name="userId"
+                           th:value="${currentUser.userId}" />
+
+                    <input type="text"
+                           name="content"
+                           placeholder="답글을 남겨보세요"
+                           maxlength="280"
+                           style="flex: 1; background: transparent; border: 1px solid #2F3336; border-radius: 9999px; padding: 6px 10px; color: #E7E9EA; font-size: 14px;" />
+
+                    <button type="submit"
+                            style="background-color: #1DA1F2; color: white; border: none; border-radius: 9999px; padding: 6px 12px; font-weight: bold; cursor: pointer;">
+                        답글
+                    </button>
+                </form>
+
+                <!-- 비로그인 안내 (선택) -->
+                <div th:if="${currentUser == null}"
+                     style="margin-top: 8px; color: #71767B; font-size: 12px;">
+                    댓글과 좋아요를 남기려면
+                    <a th:href="@{/users/login}" style="color: #1DA1F2;">로그인</a> 해주세요.
+                </div>
+            </div>
+            <!-- 좋아요 & 댓글 영역 끝 -->
+
         </div>
+        <!-- // 게시물 each 끝 -->
+
     </div>
 
     <!-- 3. 오른쪽 위젯/트렌드 섹션 -->
@@ -217,38 +319,46 @@
 
     /**
      * 게시물을 생성하는 함수 (Create)
-     * POST /posts 엔드포인트 호출
+     * POST /api/posts 엔드포인트 호출 (multipart/form-data)
      */
     async function createPost(event) {
         event.preventDefault();
 
         const content = document.getElementById('postContent').value.trim();
+        const fileInput = document.getElementById('postFiles');
+        const files = fileInput ? fileInput.files : [];
 
-        if (content === "") {
-            showMessage("게시물 내용을 입력해 주세요.");
+        if (content === "" && (!files || files.length === 0)) {
+            showMessage("게시물 내용이나 이미지를 하나 이상 입력해 주세요.");
             return;
         }
 
+        // FormData 사용
+        const formData = new FormData();
+        formData.append("content", content);
+
+        // 여러 파일 추가
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                formData.append("files", files[i]);
+            }
+        }
+
         try {
-            const response = await fetch('/api/posts', { // 요청 경로: /posts
+            const response = await fetch('/api/posts', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content: content })
+                // ⚠️ FormData 쓸 때는 Content-Type을 직접 설정하지 않는다!
+                body: formData
             });
 
             if (response.ok) {
-                // 성공하면 페이지를 새로고침하여 새로운 게시물을 불러옴
                 window.location.reload();
             } else if (response.status === 401) {
                 showMessage("로그인이 필요합니다.");
             } else if (response.status === 404) {
-                // 서버가 /posts 경로를 찾지 못했을 때의 구체적인 메시지 처리
-                showMessage("게시물 작성 실패: 요청 경로(/posts)를 서버가 찾을 수 없습니다. (404 Not Found)");
+                showMessage("게시물 작성 실패: 서버에서 경로(/api/posts)를 찾을 수 없습니다. (404 Not Found)");
             } else {
                 const errorText = await response.text();
-                // 서버가 보내온 구체적인 오류 메시지를 출력
                 showMessage("게시물 작성 실패: " + (errorText.length > 100 ? response.statusText : errorText));
             }
         } catch (error) {
@@ -259,10 +369,10 @@
 
     /**
      * 게시물을 삭제하는 함수 (Delete)
-     * DELETE /posts/{postId} 엔드포인트 호출
+     * DELETE /api/posts/{postId} 엔드포인트 호출
      */
     async function deletePost(postId) {
-        // 커스텀 모달이 없으므로 confirm 사용
+
         if (!confirm('정말 이 게시물을 삭제하시겠습니까?')) {
             return;
         }

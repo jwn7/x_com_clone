@@ -3,7 +3,6 @@ package com.example.x_com_clone.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.*;
-
 import java.io.Serializable;
 import java.util.Objects;
 

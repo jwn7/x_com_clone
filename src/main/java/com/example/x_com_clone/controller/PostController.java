@@ -1,70 +1,91 @@
 package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.domain.Post;
-import com.example.x_com_clone.domain.User;
-import com.example.x_com_clone.dto.PostCreateRequest;
+import com.example.x_com_clone.service.LikeService;
 import com.example.x_com_clone.service.PostService;
-import jakarta.servlet.http.HttpSession;
+import com.example.x_com_clone.service.ReplyService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/posts")
+@Controller
 @RequiredArgsConstructor
+@RequestMapping("/posts")
 public class PostController {
 
     private final PostService postService;
+    private final LikeService likeService;
+    private final ReplyService replyService;
 
-    // --- 1. 조회 및 검색 ---
+    /**
+     * 타임라인(게시글 목록) 화면
+     * - /posts
+     * - /posts?keyword=검색어
+     */
     @GetMapping
-    public ResponseEntity<List<Post>> getAllPosts() {
-        return ResponseEntity.ok(postService.findAllPosts());
+    public String listPosts(@RequestParam(required = false) String keyword,
+                            Model model) {
+
+        List<Post> posts = (keyword == null || keyword.isBlank())
+                ? postService.findAllPosts()
+                : postService.searchPosts(keyword);
+
+        model.addAttribute("posts", posts);
+
+        // ✅ 임시: 로그인 유저 ID (나중에 세션/스프링 시큐리티로 대체)
+        Long currentUserId = 1L; // TODO: 로그인 붙이면 실제 값으로 교체
+        model.addAttribute("currentUserId", currentUserId);
+
+        // 타임라인 템플릿 이름 (index.html, timeline.html 등으로 바꿔도 됨)
+        return "posts/timeline";
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<Post>> searchPosts(@RequestParam String keyword) {
-        return ResponseEntity.ok(postService.searchPosts(keyword));
+    /**
+     * 좋아요 토글
+     * - POST /posts/{postId}/like
+     * - 파라미터: userId (임시로 hidden input에서 전달)
+     */
+    @PostMapping("/{postId}/like")
+    public String toggleLike(@PathVariable Long postId,
+                             @RequestParam Long userId,
+                             @RequestHeader(value = "Referer", required = false) String referer) {
+
+        likeService.toggleLike(postId, userId);
+
+        // 🔙 원래 보던 페이지로 리다이렉트 (타임라인/상세 어디서 눌러도 원래 페이지로)
+        if (referer != null && !referer.isBlank()) {
+            return "redirect:" + referer;
+        }
+        return "redirect:/posts"; // fallback
     }
 
-    // --- 2. 게시물 생성 ---
-    @PostMapping
-    public ResponseEntity<Post> createPost(@RequestBody PostCreateRequest request, HttpSession session) {
+    /**
+     * 댓글 달기
+     * - POST /posts/{postId}/reply
+     * - 파라미터: userId, content
+     */
+    @PostMapping("/{postId}/reply")
+    public String addReply(@PathVariable Long postId,
+                           @RequestParam Long userId,
+                           @RequestParam String content,
+                           @RequestHeader(value = "Referer", required = false) String referer) {
 
-        User currentUser = (User) session.getAttribute("currentUser");
-
-        if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+        // 내용이 비어있으면 그냥 무시하고 돌아가기
+        if (content == null || content.isBlank()) {
+            if (referer != null && !referer.isBlank()) {
+                return "redirect:" + referer;
+            }
+            return "redirect:/posts";
         }
 
-        // currentUser.getUserId()는 User 엔티티에 postId가 있어야 작동
-        Post newPost = postService.createPost(currentUser.getUserId(), request.getContent());
+        replyService.addReply(postId, userId, content);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(newPost); // 201
-    }
-
-    // --- 3. 게시물 삭제 ---
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id, HttpSession session) {
-
-        User currentUser = (User) session.getAttribute("currentUser");
-        if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+        if (referer != null && !referer.isBlank()) {
+            return "redirect:" + referer;
         }
-
-        try {
-            postService.deletePost(id, currentUser.getUserId());
-            return ResponseEntity.noContent().build(); // 204
-
-        } catch (IllegalArgumentException e) {
-            // Post not found
-            return ResponseEntity.notFound().build(); // 404
-        } catch (IllegalStateException e) {
-            // No permission
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403
-        }
+        return "redirect:/posts";
     }
 }
