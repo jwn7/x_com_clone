@@ -99,19 +99,23 @@
             margin-bottom: 10px;
             border-radius: 8px;
         }
+
+        /* AJAX 좋아요/댓글 개수 업데이트를 위한 Span 선택자 (jQuery의 :contains를 대신) */
+        .reply-count-span {
+            color: #71767B;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
 
 <div class="main-container">
 
-    <!-- 회원가입 성공 알림 영역 (Flash Attribute) -->
     <div th:if="${signupSuccessMessage}" class="success-banner"
-         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%); z-index: 100%;">
+         style="position: fixed; top: 0; width: 50%; left: 50%; transform: translateX(-50%);">
         <p th:text="${signupSuccessMessage}" style="margin: 0;"></p>
     </div>
 
-    <!-- 1. 왼쪽 네비게이션 바 -->
     <div class="left-sidebar">
         <h2 class="text-3xl font-extrabold mb-6 text-white">X.com</h2>
 
@@ -122,7 +126,6 @@
         <div th:if="${currentUser != null}">
             <p class="text-lg font-bold">환영합니다, <span th:text="${currentUser.username}">User</span>님!</p>
 
-            <!-- 현재 사용자 프로필 링크 -->
             <a th:href="@{/users/profile/{username}(username=${currentUser.username})}"
                class="text-sm block hover:underline"
                style="color: #71767B; text-decoration: none;">
@@ -133,15 +136,12 @@
         </div>
     </div>
 
-    <!-- 2. 중앙 타임라인 -->
     <div class="timeline">
         <div class="header">홈</div>
 
-        <!-- 게시물 생성 폼 (Create) -->
         <div th:if="${currentUser != null}" class="post-input-area"
              style="padding: 15px; border-bottom: 8px solid #2F3336;">
 
-            <!-- multipart/form-data 로 FormData 전송 -->
             <form id="postForm" onsubmit="createPost(event)" enctype="multipart/form-data">
 
                 <textarea
@@ -151,7 +151,6 @@
                         placeholder="무슨 일이 일어나고 있나요?"
                 ></textarea>
 
-                <!-- 이미지 파일 업로드 -->
                 <input
                         id="postFiles"
                         type="file"
@@ -168,18 +167,13 @@
                 </div>
             </form>
         </div>
-        <!--// 게시물 생성 폼 끝 -->
-
-        <!-- 게시물 없을 때 (Read) -->
         <div th:if="${posts.isEmpty()}" class="no-posts" style="padding: 20px; text-align: center; color: #71767B;">
             <p>아직 게시물이 없습니다.</p>
         </div>
 
-        <!-- 게시물 목록 (Read) -->
         <div th:each="post : ${posts}" class="post-card"
              th:id="|post-${post.postId}|">
 
-            <!-- 프로필 링크 / 작성자 / 시간 -->
             <div class="post-info flex items-center">
                 <a th:href="@{/users/profile/{username}(username=${post.user.username})}"
                    class="profile-link flex items-center hover:text-gray-200"
@@ -194,12 +188,10 @@
                       style="color: #71767B; margin-left: 5px;">시간</span>
             </div>
 
-            <!-- 게시물 내용 -->
             <div class="post-content">
                 <p th:text="${post.content}">여기에 포스트 내용이 들어갑니다.</p>
             </div>
 
-            <!-- 첨부 이미지 영역 -->
             <div class="post-images" th:if="${post.mediaList != null}">
                 <img th:each="media : ${post.mediaList}"
                      th:src="@{${media.fileUrl}}"
@@ -207,7 +199,6 @@
                      style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
             </div>
 
-            <!-- 삭제 버튼 (Delete) -->
             <button
                     th:if="${currentUser != null and post.user.userId == currentUser.userId}"
                     th:data-post-id="${post.postId}"
@@ -216,43 +207,37 @@
                 삭제
             </button>
 
-            <!-- ========================= -->
-            <!-- 좋아요 & 댓글 영역 (신규) -->
-            <!-- ========================= -->
-            <div style="margin-top: 10px; border-top: 1px solid #2F3336; padding-top: 10px; font-size: 14px;">
+            <div class="like-reply-area"
+                 style="margin-top: 10px; border-top: 1px solid #2F3336; padding-top: 10px; font-size: 14px;">
 
-                <!-- 좋아요 / 댓글 개수 표시 -->
                 <div style="display: flex; align-items: center; gap: 10px;">
 
-                    <!-- 좋아요 버튼 (로그인한 경우만) -->
                     <form th:if="${currentUser != null}"
-                          th:action="@{|/posts/${post.postId}/like|}"
-                          method="post"
+                          onsubmit="toggleLike(event, this)"
+                          th:data-post-id="${post.postId}"
                           style="display: inline;">
-                        <input type="hidden" name="userId"
-                               th:value="${currentUser.userId}" />
+                        <input type="hidden" name="userId" th:value="${currentUser.userId}" />
                         <button type="submit"
                                 style="background: transparent; border: none; color: #E7E9EA; cursor: pointer;">
                             ❤️
-                            <span th:text="${#lists.size(post.likes)}">0</span>
+                            <span th:text="${#lists.size(post.likes)}" th:id="|like-count-${post.postId}|">0</span>
                         </button>
                     </form>
 
-                    <!-- 비로그인일 때는 숫자만 -->
                     <span th:if="${currentUser == null}">
                         ❤️ <span th:text="${#lists.size(post.likes)}">0</span>
                     </span>
 
-                    <!-- 댓글 개수 -->
-                    <span style="color: #71767B; margin-left: 10px;">
+                    <span class="reply-count-span">
                         💬 <span th:text="${#lists.size(post.replies)}">0</span> 댓글
                     </span>
                 </div>
 
-                <!-- 댓글 목록 -->
-                <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid #2F3336;"
-                     th:if="${post.replies != null and !post.replies.isEmpty()}">
-                    <div th:each="reply : ${post.replies}" style="margin-bottom: 4px;">
+                <div class="reply-list-container"
+                     th:with="hasReplies=${post.replies != null and !post.replies.isEmpty()}"
+                     th:style="${hasReplies ? 'margin-top: 8px; padding-left: 8px; border-left: 2px solid #2F3336;' : 'display: none;'}"
+                     th:data-post-id="${post.postId}">
+                    <div th:each="reply : ${post.replies}" class="single-reply" style="margin-bottom: 4px;">
                         <b th:text="${reply.user.username}">user</b>
                         <span style="color: #71767B; font-size: 12px; margin-left: 4px;"
                               th:text="${#temporals.format(reply.createdAt, 'MM-dd HH:mm')}">
@@ -262,14 +247,12 @@
                     </div>
                 </div>
 
-                <!-- 댓글 작성 폼 (로그인한 경우만) -->
                 <form th:if="${currentUser != null}"
-                      th:action="@{|/posts/${post.postId}/reply|}"
-                      method="post"
+                      onsubmit="addReply(event, this)"
+                      th:data-post-id="${post.postId}"
                       style="margin-top: 8px; display: flex; gap: 6px;">
 
-                    <input type="hidden" name="userId"
-                           th:value="${currentUser.userId}" />
+                    <input type="hidden" name="userId" th:value="${currentUser.userId}" />
 
                     <input type="text"
                            name="content"
@@ -283,21 +266,15 @@
                     </button>
                 </form>
 
-                <!-- 비로그인 안내 (선택) -->
                 <div th:if="${currentUser == null}"
                      style="margin-top: 8px; color: #71767B; font-size: 12px;">
                     댓글과 좋아요를 남기려면
                     <a th:href="@{/users/login}" style="color: #1DA1F2;">로그인</a> 해주세요.
                 </div>
             </div>
-            <!-- 좋아요 & 댓글 영역 끝 -->
-
         </div>
-        <!-- // 게시물 each 끝 -->
-
     </div>
 
-    <!-- 3. 오른쪽 위젯/트렌드 섹션 -->
     <div class="right-sidebar" style="width: 350px; padding: 10px;">
         <p style="color: #71767B;">트렌드 위젯 영역</p>
     </div>
@@ -305,17 +282,17 @@
 </div>
 
 
-<!-- JavaScript CRUD Functions -->
 <script>
 
     // Helper function to show a custom message box instead of alert()
     function showMessage(message) {
         console.log("Message: " + message);
-        // Note: Using alert() for immediate feedback in this environment. In a production setting, replace with a custom modal/toast.
+        // Note: Using alert() for immediate feedback in this environment.
+        // In a production setting, replace with a custom modal/toast.
         alert(message);
     }
 
-    // --- CRUD Functions ---
+    // --- CRUD Functions (AJAX) ---
 
     /**
      * 게시물을 생성하는 함수 (Create)
@@ -333,11 +310,9 @@
             return;
         }
 
-        // FormData 사용
         const formData = new FormData();
         formData.append("content", content);
 
-        // 여러 파일 추가
         if (files && files.length > 0) {
             for (let i = 0; i < files.length; i++) {
                 formData.append("files", files[i]);
@@ -347,16 +322,15 @@
         try {
             const response = await fetch('/api/posts', {
                 method: 'POST',
-                // ⚠️ FormData 쓸 때는 Content-Type을 직접 설정하지 않는다!
+                // FormData 사용 시 Content-Type은 브라우저가 자동으로 multipart/form-data로 설정
                 body: formData
             });
 
             if (response.ok) {
+                // 성공 시 페이지 새로고침
                 window.location.reload();
             } else if (response.status === 401) {
                 showMessage("로그인이 필요합니다.");
-            } else if (response.status === 404) {
-                showMessage("게시물 작성 실패: 서버에서 경로(/api/posts)를 찾을 수 없습니다. (404 Not Found)");
             } else {
                 const errorText = await response.text();
                 showMessage("게시물 작성 실패: " + (errorText.length > 100 ? response.statusText : errorText));
@@ -401,6 +375,125 @@
             }
         } catch (error) {
             console.error('Error deleting post:', error);
+            showMessage("네트워크 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 좋아요를 토글하는 함수 (Like/Unlike - AJAX)
+     * POST /posts/{postId}/like 엔드포인트 호출
+     */
+    async function toggleLike(event, formElement) {
+        event.preventDefault();
+
+        const postId = formElement.getAttribute('data-post-id');
+        const likeCountElement = document.getElementById(`like-count-${postId}`);
+
+        try {
+            const response = await fetch(`/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // CSRF 토큰 처리가 필요할 경우 여기에 추가
+                },
+                // 백엔드 API가 userId를 URL 인코딩 형식으로 받는다고 가정
+                body: new URLSearchParams({
+                    'userId': formElement.querySelector('input[name="userId"]').value
+                })
+            });
+
+            if (response.ok) {
+                // 백엔드가 좋아요 개수를 정수로 반환한다고 가정
+                const newCount = parseInt(await response.text());
+                likeCountElement.innerText = newCount;
+                // (추가 개선) 좋아요 상태에 따라 하트 색깔 변경 로직 추가 가능
+            } else if (response.status === 401) {
+                showMessage("좋아요를 하려면 로그인이 필요합니다.");
+            } else {
+                showMessage("좋아요 처리 실패: " + response.statusText);
+            }
+        } catch (error) {
+            console.error('Error toggling like:', error);
+            showMessage("네트워크 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 댓글을 작성하고 목록에 추가하는 함수 (Reply - AJAX)
+     * POST /posts/{postId}/reply 엔드포인트 호출
+     */
+    async function addReply(event, formElement) {
+        event.preventDefault();
+
+        const postId = formElement.getAttribute('data-post-id');
+        const contentInput = formElement.querySelector('input[name="content"]');
+        const content = contentInput.value.trim();
+
+        if (!content) return;
+
+        const formData = new URLSearchParams(new FormData(formElement));
+        const currentUsername = formElement.parentElement.parentElement.querySelector('.left-sidebar p span').innerText;
+
+        try {
+            const response = await fetch(`/posts/${postId}/reply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // CSRF 토큰 처리가 필요할 경우 여기에 추가
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                // 백엔드가 성공적으로 저장된 댓글 객체를 JSON으로 반환한다고 가정
+                // 예시에서는 JSON 반환 없이 클라이언트에서 새 댓글을 생성
+
+                // 1. 댓글 목록 컨테이너 찾기 및 표시
+                const postCard = document.getElementById(`post-${postId}`);
+                let replyListContainer = postCard.querySelector('.reply-list-container');
+
+                // 컨테이너가 숨겨져 있다면 표시 (댓글이 없었을 때)
+                if (replyListContainer && replyListContainer.style.display === 'none') {
+                    replyListContainer.style.display = '';
+                    replyListContainer.style.marginTop = '8px';
+                    replyListContainer.style.paddingLeft = '8px';
+                    replyListContainer.style.borderLeft = '2px solid #2F3336';
+                }
+
+                // 현재 시간을 간단히 포맷 (백엔드에서 포맷된 시간을 받는 것이 더 안정적)
+                const now = new Date();
+                const timeString = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+                // 2. 새로운 댓글 HTML 요소 생성
+                const newReplyHtml = `
+                    <div class="single-reply" style="margin-bottom: 4px;">
+                        <b>${currentUsername}</b>
+                        <span style="color: #71767B; font-size: 12px; margin-left: 4px;">
+                            ${timeString}
+                        </span>
+                        <div style="margin-left: 4px;">${content}</div>
+                    </div>
+                `;
+
+                // 3. 댓글 목록 맨 아래에 삽입
+                replyListContainer.insertAdjacentHTML('beforeend', newReplyHtml);
+
+                // 4. 댓글 입력창 초기화
+                contentInput.value = '';
+
+                // 5. 댓글 개수 업데이트
+                const replyCountSpan = postCard.querySelector('.reply-count-span span:first-child');
+                if (replyCountSpan) {
+                    replyCountSpan.innerText = parseInt(replyCountSpan.innerText) + 1;
+                }
+
+            } else if (response.status === 401) {
+                showMessage("댓글을 작성하려면 로그인이 필요합니다.");
+            } else {
+                showMessage("댓글 작성 실패: " + response.statusText);
+            }
+        } catch (error) {
+            console.error('Error adding reply:', error);
             showMessage("네트워크 오류가 발생했습니다.");
         }
     }
