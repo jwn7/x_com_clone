@@ -4,31 +4,50 @@
     <meta charset="UTF-8">
     <title th:text="|${profileUser.username} - X.com Clone|">X.com Clone - Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/style.css}">
+
     <style>
         body {
             background-color: #000000;
             color: #E7E9EA;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
         }
         .profile-container {
             width: 100%;
             max-width: 600px;
-            min-height: 100vh;
             border-left: 1px solid #2F3336;
             border-right: 1px solid #2F3336;
+            min-height: 100vh;
         }
         .header {
-            border-bottom: 1px solid #2F3336;
             padding: 15px;
+            border-bottom: 1px solid #2F3336;
             font-size: 20px;
             font-weight: bold;
-            position: sticky;
-            top: 0;
-            background-color: #000000;
-            z-index: 50;
+        }
+        .profile-image-large {
+            width: 130px; /* 더 크게 */
+            height: 130px;
+            border-radius: 50%;
+            border: 4px solid #000000;
+            object-fit: cover;
+            margin-top: -65px; /* 헤더 아래로 살짝 올라오게 */
+        }
+        .action-button-small {
+            background-color: transparent;
+            color: #E7E9EA;
+            border: 1px solid #71767B;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .action-button-small:hover {
+            background-color: #0E1418;
         }
     </style>
 </head>
@@ -41,13 +60,43 @@
     </div>
 
     <div style="padding: 20px;">
-        <h3 class="text-2xl font-bold mb-2" th:text="${profileUser.username}">Username</h3>
+
+        <div class="flex justify-between items-start mb-4">
+            <img th:src="${profileUser.profileImageUrl ?: '/images/default-profile.png'}"
+                 alt="Profile Image"
+                 class="profile-image-large">
+
+            <div th:if="${session.currentUser != null and session.currentUser.userId == profileUser.userId}"
+                 style="margin-top: 10px;">
+                <a th:href="@{/users/profile/edit}"
+                   class="action-button-small">
+                    프로필 수정
+                </a>
+            </div>
+        </div>
+
+        <h3 class="text-2xl font-bold mb-1" th:text="${profileUser.username}">Display Name</h3>
         <p class="text-sm mb-4" style="color: #71767B;">@<span th:text="${profileUser.username}">Username</span></p>
 
-        <p class="mt-8">여기는 프로필 정보 및 해당 사용자가 작성한 게시물 목록이 표시될 공간입니다.</p>
+        <p th:if="${profileUser.bio != null and profileUser.bio != ''}"
+           class="mb-4" th:text="${profileUser.bio}"></p>
+        <p th:unless="${profileUser.bio != null and profileUser.bio != ''}"
+           class="mb-4 text-gray-500">작성된 소개가 없습니다.</p>
+
+        <p class="text-sm mb-4" style="color: #71767B;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5" />
+            </svg>
+            가입일: <span th:text="${#temporals.format(profileUser.createdAt, 'yyyy년 M월')}">2023년 1월</span>
+        </p>
+
+        <hr style="border-color: #2F3336; margin: 20px 0;">
+
+        <h4 class="text-xl font-bold mb-4">게시물</h4>
+        <p style="color: #71767B;">(여기에 해당 사용자가 작성한 게시물 목록이 표시됩니다.)</p>
 
         <div class="mt-10">
-            <a href="/" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
+            <a th:href="@{/}" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
         </div>
     </div>
 

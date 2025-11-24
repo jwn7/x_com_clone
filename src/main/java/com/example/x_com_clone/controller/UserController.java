@@ -2,25 +2,30 @@ package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.domain.User;
 import com.example.x_com_clone.dto.UserSignupRequest;
+import com.example.x_com_clone.dto.UserProfileUpdateRequest;
 import com.example.x_com_clone.service.UserService;
 import jakarta.servlet.http.HttpSession;
+// import jakarta.validation.Valid; // 📌 제거
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // 💡 로깅 추가
-import org.springframework.http.HttpStatus; // 💡 HttpStatus import 추가
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+// import org.springframework.validation.BindingResult; // 📌 제거
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException; // 💡 ResponseStatusException import 추가
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/users")
 @RequiredArgsConstructor
-@Slf4j // 💡 로깅 기능 사용
+@Slf4j
 public class UserController {
 
     private final UserService userService;
-    // 💡 필요하다면 PostService 등 다른 서비스도 주입 가능 (예: private final PostService postService;)
+
+    // --- 1. 회원가입 (Signup) ---
 
     @GetMapping("/signup")
     public String signupForm(Model model) {
@@ -30,10 +35,13 @@ public class UserController {
 
     @PostMapping("/signup")
     public String signup(
-            @ModelAttribute("signupRequest") UserSignupRequest request,
+            @ModelAttribute("signupRequest") UserSignupRequest request, // ✅ @Valid 제거
+            // BindingResult bindingResult, // 📌 제거
             Model model,
             RedirectAttributes redirectAttributes
     ) {
+        // 1. DTO 유효성 검사 로직 제거
+
         try {
             userService.signup(request);
             redirectAttributes.addFlashAttribute("signupSuccessMessage",
@@ -41,11 +49,15 @@ public class UserController {
             return "redirect:/";
 
         } catch (IllegalStateException e) {
-            log.warn("회원가입 실패: {}", e.getMessage()); // 💡 실패 시 로깅
+            // 2. 비즈니스 로직(중복 체크) 예외 처리는 유지
+            log.warn("회원가입 실패: {}", e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "signup";
         }
     }
+
+    // --- 2. 로그인 및 로그아웃 (Login & Logout) ---
+    // (이 부분은 수정할 필요가 없습니다.)
 
     @GetMapping("/login")
     public String loginForm() {
@@ -65,7 +77,7 @@ public class UserController {
             return "redirect:/";
 
         } catch (IllegalArgumentException e) {
-            log.info("로그인 실패 (Username: {}): {}", username, e.getMessage()); // 💡 실패 시 로깅
+            log.info("로그인 실패 (Username: {}): {}", username, e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "login";
         }
@@ -77,33 +89,85 @@ public class UserController {
         return "redirect:/";
     }
 
-    /**
-     * 특정 사용자의 프로필 페이지로 이동 (개선됨)
-     * URL: /users/profile/{username}
-     */
+    // --- 3. 프로필 조회 (Profile) ---
+    // (이 부분은 수정할 필요가 없습니다.)
+
     @GetMapping("/profile/{username}")
     public String profile(@PathVariable String username, Model model) {
-        log.info("프로필 페이지 요청: @{}", username); // 💡 요청 로깅
+        log.info("프로필 페이지 요청: @{}", username);
 
         User profileUser;
         try {
-            // 1. 서비스 레이어를 통해 해당 username을 가진 사용자 정보를 조회합니다.
             profileUser = userService.findUserByUsername(username);
 
         } catch (IllegalArgumentException e) {
-            // 💡 사용자를 찾을 수 없는 경우 ResponseStatusException을 던져 404를 반환하게 합니다.
-            // 이렇게 하면 깔끔하게 에러 처리가 분리되고 사용자에게 'errorPage' 대신 404 상태를 전달할 수 있습니다.
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다: " + username);
         }
 
-        // 2. 조회된 사용자 정보를 모델에 담아 뷰로 전달합니다.
         model.addAttribute("profileUser", profileUser);
-
-        // 3. (추가 로직 필요) 프로필 페이지에 표시할 해당 사용자의 게시물 목록을 조회합니다.
-        // List<Post> userPosts = postService.findPostsByUsername(username);
-        // model.addAttribute("userPosts", userPosts);
-
-        // 4. 'profile.html' 템플릿을 반환합니다.
         return "profile";
+    }
+
+    // --- 4. 프로필 수정 (Edit Profile) ---
+
+    @GetMapping("/profile/edit")
+    public String editProfileForm(HttpSession session, Model model) {
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        if (currentUser == null) {
+            log.warn("비로그인 사용자가 프로필 수정 폼 요청");
+            return "redirect:/users/login";
+        }
+
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest(
+                currentUser.getUsername(),
+                currentUser.getBio(),
+                currentUser.getProfileImageUrl()
+        );
+
+        model.addAttribute("profileUpdateRequest", request);
+        return "profile_edit";
+    }
+
+    @PostMapping("/profile/edit")
+    public String editProfile(
+            @ModelAttribute("profileUpdateRequest") UserProfileUpdateRequest request, // ✅ @Valid 제거
+            // BindingResult bindingResult, // 📌 제거
+            @RequestParam(value = "profileImageFile", required = false) MultipartFile profileImageFile,
+            HttpSession session,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        if (currentUser == null) {
+            log.warn("비로그인 사용자가 프로필 수정 시도");
+            return "redirect:/users/login";
+        }
+
+        // 1. DTO 유효성 검사 로직 제거
+
+        try {
+            // Service는 여전히 호출
+            User updatedUser = userService.updateProfile(currentUser.getUserId(), request, profileImageFile);
+
+            session.setAttribute("currentUser", updatedUser);
+
+            redirectAttributes.addFlashAttribute("signupSuccessMessage", "프로필 정보가 성공적으로 수정되었습니다.");
+
+            return "redirect:/users/profile/" + updatedUser.getUsername();
+
+        } catch (IllegalStateException e) {
+            // 2. 비즈니스 로직(중복 체크) 예외 처리는 유지
+            log.warn("프로필 수정 실패 (User: {}): {}", currentUser.getUsername(), e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("profileUpdateRequest", request);
+            return "profile_edit";
+        } catch (Exception e) {
+            log.error("프로필 수정 중 일반 오류 발생: {}", e.getMessage());
+            model.addAttribute("errorMessage", "프로필 수정 중 오류가 발생했습니다.");
+            model.addAttribute("profileUpdateRequest", request);
+            return "profile_edit";
+        }
     }
 }

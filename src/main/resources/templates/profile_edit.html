@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>프로필 수정 - X.com Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .edit-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            background-color: #000000;
+            border: 1px solid #2F3336;
+            border-radius: 8px;
+            margin-top: 50px;
+        }
+        .form-label {
+            display: block;
+            color: #E7E9EA;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #1A1A1A;
+            border: 1px solid #2F3336;
+            border-radius: 4px;
+            color: #E7E9EA;
+            box-sizing: border-box;
+        }
+        /* 파일 입력 필드 기본 색상 조정 */
+        .form-input-file {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #1A1A1A;
+            border: 1px solid #2F3336;
+            border-radius: 4px;
+            color: #E7E9EA;
+            box-sizing: border-box;
+        }
+        /* 파일 입력 필드 '파일 선택' 버튼 스타일 조정 (브라우저마다 다를 수 있음) */
+        .form-input-file::file-selector-button {
+            background-color: #2F3336;
+            color: #E7E9EA;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-right: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .form-input-file::file-selector-button:hover {
+            background-color: #3C4042;
+        }
+        .error-message {
+            color: #F4212E;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="flex justify-center bg-black">
+<div class="edit-container">
+    <h2 class="text-3xl font-extrabold mb-6 text-white">프로필 수정</h2>
+
+    <div th:if="${errorMessage}" class="error-message">
+        <p th:text="${errorMessage}"></p>
+    </div>
+
+    <form th:action="@{/users/profile/edit}"
+          method="post"
+          enctype="multipart/form-data">
+
+        <label for="username" class="form-label">사용자 이름</label>
+        <input type="text"
+               id="username"
+               name="username"
+               th:value="${profileUpdateRequest.username}" class="form-input"
+               placeholder="새로운 사용자 이름을 입력하세요"
+               required>
+
+        <label for="bio" class="form-label">소개 (Bio)</label>
+        <textarea id="bio"
+                  name="bio"
+                  th:text="${profileUpdateRequest.bio}" class="form-input"
+                  rows="3"
+                  placeholder="자기소개를 입력하세요 (최대 500자)"></textarea>
+
+        <label for="profileImageFile" class="form-label">프로필 이미지 업로드</label>
+        <input type="file"
+               id="profileImageFile"
+               name="profileImageFile" class="form-input-file"
+               accept="image/*">
+
+        <input type="hidden" name="profileImageUrl" th:value="${profileUpdateRequest.profileImageUrl}">
+
+
+        <div class="mt-6 flex justify-between items-center">
+            <a th:href="@{/users/profile/{username}(username=${session.currentUser?.username})}"
+               class="action-button-small"
+               style="background-color: transparent; color: #71767B; border: 1px solid #71767B;">
+                취소
+            </a>
+
+            <button type="submit"
+                    class="action-button">
+                프로필 저장
+            </button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

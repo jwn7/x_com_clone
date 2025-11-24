@@ -1,0 +1,119 @@
+/* src/main/resources/static/css/style.css */
+
+/* 기본 CSS 초기화 및 설정 */
+body {
+    background-color: #000000;
+    color: #E7E9EA;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+.main-container {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    min-height: 100vh;
+}
+.left-sidebar {
+    width: 250px;
+    padding: 10px;
+    border-right: 1px solid #2F3336;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+.timeline {
+    flex-grow: 1;
+    max-width: 600px;
+    border-right: 1px solid #2F3336;
+    min-height: 100vh;
+}
+.header {
+    border-bottom: 1px solid #2F3336;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    background-color: #000000;
+    z-index: 50;
+}
+.post-card {
+    border-bottom: 1px solid #2F3336;
+    padding: 15px;
+    transition: background-color 0.2s;
+}
+.post-card:hover {
+    background-color: #080808;
+}
+.post-info {
+    color: #71767B;
+    font-size: 14px;
+}
+.post-content {
+    margin-top: 5px;
+    white-space: pre-wrap;
+}
+.action-button {
+    color: white;
+    background-color: #1DA1F2;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    text-decoration: none;
+    font-weight: bold;
+    display: block;
+    text-align: center;
+    margin-bottom: 10px;
+    transition: background-color 0.2s;
+}
+.action-button:hover {
+    background-color: #158acb;
+}
+
+/* 게시물 입력 영역 */
+.post-input-area textarea {
+    box-sizing: border-box;
+    width: 100%;
+    resize: none;
+    border: none;
+    background: transparent;
+    color: #E7E9EA;
+    font-size: 18px;
+    outline: none;
+    padding: 10px 0;
+    min-height: 80px;
+}
+.success-banner {
+    background-color: #1a8cd8;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+/* 📌 게시물 작성 및 목록에 사용되는 작은 프로필 이미지 (48x48) */
+.profile-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+/* 📌 왼쪽 사이드바 '환영합니다' 밑에 추가된 프로필 이미지 */
+.profile-image-large {
+    width: 64px; /* 좀 더 크게 설정 */
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-header-grid {
+    display: grid;
+    grid-template-columns: 48px 1fr; /* 이미지 48px, 내용 1fr */
+    gap: 10px;
+}
