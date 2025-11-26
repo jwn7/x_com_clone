@@ -4,6 +4,7 @@ import com.example.x_com_clone.domain.User;
 import com.example.x_com_clone.dto.UserSignupRequest;
 import com.example.x_com_clone.dto.UserProfileUpdateRequest;
 import com.example.x_com_clone.service.UserService;
+import com.example.x_com_clone.service.PostService; // 📌 PostService import 추가
 import jakarta.servlet.http.HttpSession;
 // import jakarta.validation.Valid; // 📌 제거
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UserController {
 
     private final UserService userService;
+    private final PostService postService; // 📌 PostService 필드 추가
 
     // --- 1. 회원가입 (Signup) ---
-
+    // ... (기존 signup 로직 유지) ...
     @GetMapping("/signup")
     public String signupForm(Model model) {
         model.addAttribute("signupRequest", new UserSignupRequest());
@@ -36,12 +38,9 @@ public class UserController {
     @PostMapping("/signup")
     public String signup(
             @ModelAttribute("signupRequest") UserSignupRequest request, // ✅ @Valid 제거
-            // BindingResult bindingResult, // 📌 제거
             Model model,
             RedirectAttributes redirectAttributes
     ) {
-        // 1. DTO 유효성 검사 로직 제거
-
         try {
             userService.signup(request);
             redirectAttributes.addFlashAttribute("signupSuccessMessage",
@@ -49,7 +48,6 @@ public class UserController {
             return "redirect:/";
 
         } catch (IllegalStateException e) {
-            // 2. 비즈니스 로직(중복 체크) 예외 처리는 유지
             log.warn("회원가입 실패: {}", e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "signup";
@@ -57,7 +55,6 @@ public class UserController {
     }
 
     // --- 2. 로그인 및 로그아웃 (Login & Logout) ---
-    // (이 부분은 수정할 필요가 없습니다.)
 
     @GetMapping("/login")
     public String loginForm() {
@@ -90,7 +87,6 @@ public class UserController {
     }
 
     // --- 3. 프로필 조회 (Profile) ---
-    // (이 부분은 수정할 필요가 없습니다.)
 
     @GetMapping("/profile/{username}")
     public String profile(@PathVariable String username, Model model) {
@@ -104,12 +100,20 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다: " + username);
         }
 
+        // 📌 핵심 추가 로직: 해당 사용자의 게시물 목록을 가져와 모델에 추가
+        try {
+            model.addAttribute("posts", postService.findPostsByUser(profileUser));
+        } catch (Exception e) {
+            log.error("사용자 게시물 로드 실패 (User: {}): {}", username, e.getMessage());
+            model.addAttribute("posts", java.util.Collections.emptyList()); // 오류 발생 시 빈 리스트 전달
+        }
+
         model.addAttribute("profileUser", profileUser);
         return "profile";
     }
 
     // --- 4. 프로필 수정 (Edit Profile) ---
-
+    // ... (기존 editProfileForm/editProfile 로직 유지) ...
     @GetMapping("/profile/edit")
     public String editProfileForm(HttpSession session, Model model) {
         User currentUser = (User) session.getAttribute("currentUser");
@@ -132,7 +136,6 @@ public class UserController {
     @PostMapping("/profile/edit")
     public String editProfile(
             @ModelAttribute("profileUpdateRequest") UserProfileUpdateRequest request, // ✅ @Valid 제거
-            // BindingResult bindingResult, // 📌 제거
             @RequestParam(value = "profileImageFile", required = false) MultipartFile profileImageFile,
             HttpSession session,
             Model model,
@@ -145,10 +148,7 @@ public class UserController {
             return "redirect:/users/login";
         }
 
-        // 1. DTO 유효성 검사 로직 제거
-
         try {
-            // Service는 여전히 호출
             User updatedUser = userService.updateProfile(currentUser.getUserId(), request, profileImageFile);
 
             session.setAttribute("currentUser", updatedUser);
@@ -158,7 +158,6 @@ public class UserController {
             return "redirect:/users/profile/" + updatedUser.getUsername();
 
         } catch (IllegalStateException e) {
-            // 2. 비즈니스 로직(중복 체크) 예외 처리는 유지
             log.warn("프로필 수정 실패 (User: {}): {}", currentUser.getUsername(), e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             model.addAttribute("profileUpdateRequest", request);

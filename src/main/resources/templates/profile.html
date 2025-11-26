@@ -7,8 +7,9 @@
     <link rel="stylesheet" th:href="@{/style1.css}">
 
     <style>
+        /* 📌 1. 배경색: X.com Dim 모드와 유사한 어두운 톤 유지 */
         body {
-            background-color: #000000;
+            background-color: #15202B;
             color: #E7E9EA;
             font-family: Arial, sans-serif;
             display: flex;
@@ -17,21 +18,23 @@
         .profile-container {
             width: 100%;
             max-width: 600px;
-            border-left: 1px solid #2F3336;
-            border-right: 1px solid #2F3336;
+            background-color: #15202B;
+            /* 📌 2. 컨테이너 테두리: #2F3336에서 #38444D로 밝게 조정 */
+            border-left: 1px solid #38444D;
+            border-right: 1px solid #38444D;
             min-height: 100vh;
         }
         /* 프로필 페이지 상단 헤더 */
         .header {
             padding: 15px;
-            border-bottom: 1px solid #2F3336;
+            /* 📌 3. 헤더 하단 경계선: #38444D로 밝게 조정 */
+            border-bottom: 1px solid #38444D;
             font-size: 20px;
             font-weight: bold;
-            /* 📌 Sticky 속성을 추가하여 스크롤 시 상단에 고정 */
             position: sticky;
             top: 0;
             z-index: 10;
-            background-color: #000000;
+            background-color: #15202B;
         }
 
         /* 📌 프로필 이미지 */
@@ -39,16 +42,17 @@
             width: 130px;
             height: 130px;
             border-radius: 50%;
-            border: 4px solid #000000;
+            /* 📌 이미지 테두리: 변경된 배경색(#15202B)과 일치시켜 깔끔하게 분리 */
+            border: 4px solid #15202B;
             object-fit: cover;
-            /* margin-top은 그대로 유지 */
             margin-top: -65px;
         }
 
         .action-button-small {
             background-color: transparent;
             color: #E7E9EA;
-            border: 1px solid #71767B;
+            /* 📌 4. '프로필 수정' 버튼 테두리: #71767B에서 #38444D로 통일 */
+            border: 1px solid #38444D;
             padding: 8px 16px;
             border-radius: 9999px;
             font-weight: bold;
@@ -57,7 +61,24 @@
             transition: background-color 0.2s;
         }
         .action-button-small:hover {
+            /* 📌 5. 호버 색상: 배경보다 약간 어둡게 */
             background-color: #0E1418;
+        }
+        /* 📌 6. 부가 정보 텍스트 색상: #71767B에서 #8B98A5 (트위터 중간톤 회색)으로 조정 */
+        .text-secondary {
+            color: #8B98A5;
+        }
+
+        /* 📌 게시물 목록을 위한 스타일 */
+        .post-card-profile {
+            border-bottom: 1px solid #38444D;
+            padding: 15px 0;
+            display: flex;
+        }
+        .post-info-profile {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -66,10 +87,10 @@
 <div class="profile-container">
     <div class="header">
         <span th:text="${profileUser.username}">Username</span>
-        <div class="text-sm font-normal" style="color: #71767B;">@<span th:text="${profileUser.username}">Username</span></div>
+        <div class="text-sm font-normal text-secondary">@<span th:text="${profileUser.username}">Username</span></div>
     </div>
 
-    <div class="profile-banner" style="height: 180px; background-color: #222;">
+    <div class="profile-banner" style="height: 180px; background-color: transparent;">
     </div>
 
     <div style="padding: 0 20px;">
@@ -89,25 +110,58 @@
         </div>
 
         <h3 class="text-2xl font-bold mb-1" th:text="${profileUser.username}">Display Name</h3>
-        <p class="text-sm mb-4" style="color: #71767B;">@<span th:text="${profileUser.username}">Username</span></p>
+        <p class="text-sm mb-4 text-secondary">@<span th:text="${profileUser.username}">Username</span></p>
 
         <p th:if="${profileUser.bio != null and profileUser.bio != ''}"
            class="mb-4" th:text="${profileUser.bio}"></p>
         <p th:unless="${profileUser.bio != null and profileUser.bio != ''}"
-           class="mb-4 text-gray-500">작성된 소개가 없습니다.</p>
+           class="mb-4 text-secondary">작성된 소개가 없습니다.</p>
 
-        <p class="text-sm mb-4" style="color: #71767B;">
+        <p class="text-sm mb-4 text-secondary">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5" />
             </svg>
             가입일: <span th:text="${#temporals.format(profileUser.createdAt, 'yyyy년 M월')}">2023년 1월</span>
         </p>
 
-        <hr style="border-color: #2F3336; margin: 20px 0;">
+        <hr style="border-color: #38444D; margin: 20px 0;">
 
         <h4 class="text-xl font-bold mb-4">게시물</h4>
-        <p style="color: #71767B;">(여기에 해당 사용자가 작성한 게시물 목록이 표시됩니다.)</p>
 
+        <div th:if="${posts == null or posts.isEmpty()}" class="no-posts" style="padding: 10px 0; text-align: center;">
+            <p class="text-secondary">작성된 게시물이 없습니다.</p>
+        </div>
+
+        <div th:each="post : ${posts}" class="post-card-profile">
+
+            <div style="flex-grow: 1;">
+                <div class="post-info-profile">
+                    <span th:text="${post.user.username}" class="font-bold" style="color: #E7E9EA;">Display Name</span>
+                    <span class="text-secondary" style="font-weight: normal; margin-left: 5px;">
+                        @<span th:text="${post.user.username}">Username</span>
+                    </span>
+                    <span class="text-secondary" style="margin-left: 5px;">·</span>
+                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}"
+                          class="text-secondary" style="margin-left: 5px;">시간</span>
+                </div>
+
+                <div class="post-content mb-2">
+                    <p th:text="${post.content}" style="color: #E7E9EA;">여기에 포스트 내용이 들어갑니다.</p>
+                </div>
+
+                <div class="post-images" th:if="${post.mediaList != null and not #lists.isEmpty(post.mediaList)}">
+                    <img th:each="media : ${post.mediaList}"
+                         th:src="@{${media.fileUrl}}"
+                         alt=""
+                         style="max-width: 100%; border-radius: 10px; margin-top: 5px;">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 14px; color: #8B98A5;">
+                    <span>❤️ <span th:text="${#lists.size(post.likes)}">0</span></span>
+                    <span>💬 <span th:text="${#lists.size(post.replies)}">0</span></span>
+                </div>
+            </div>
+        </div>
         <div class="mt-10">
             <a th:href="@{/}" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
         </div>

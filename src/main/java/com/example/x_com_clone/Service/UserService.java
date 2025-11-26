@@ -5,22 +5,30 @@ import com.example.x_com_clone.dto.UserSignupRequest;
 import com.example.x_com_clone.dto.UserProfileUpdateRequest;
 import com.example.x_com_clone.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // 📌 추가: 'log' 필드를 자동 생성합니다.
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@Slf4j // ✅ 이 부분을 추가하여 'log' 심볼 오류를 해결합니다.
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    // 📌 로컬 파일 저장 절대 경로 설정 (🚨 폴더를 수동으로 생성해야 합니다!)
+    private static final String UPLOAD_DIR = "C:/xcom_upload_folder/uploads/profile/";
 
     // 1. 회원가입 메서드 (Signup)
     @Transactional
@@ -53,9 +61,9 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다: " + username));
     }
 
-    // 4. 프로필 업데이트 메서드 (Update Profile) - 파일 처리 로직 포함
+    // 4. 프로필 업데이트 메서드 (Update Profile)
     @Transactional
-    public User updateProfile(Long currentUserId, UserProfileUpdateRequest request, MultipartFile profileImageFile) throws IOException {
+    public User updateProfile(Long currentUserId, UserProfileUpdateRequest request, MultipartFile profileImageFile) {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -68,19 +76,42 @@ public class UserService {
 
         String newProfileImageUrl = user.getProfileImageUrl();
 
-        // 🚨 파일 처리 로직
+        // 🚨 파일 처리 로직 시작
         if (profileImageFile != null && !profileImageFile.isEmpty()) {
-            log.info("새 프로필 이미지 파일 수신: {}", profileImageFile.getOriginalFilename()); // ✅ 'log' 사용 가능
+            log.info("새 프로필 이미지 파일 수신: {}", profileImageFile.getOriginalFilename());
 
-            // 💡 파일 저장 (S3, GCS 등 클라우드 스토리지 또는 로컬 경로)
-            // String uploadedUrl = fileStorageService.uploadFile(profileImageFile);
+            try {
+                // 1. 저장 디렉토리 생성
+                File uploadDir = new File(UPLOAD_DIR);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
 
-            // 더미 URL: 실제 구현 시 이 부분을 유효한 URL로 교체해야 합니다.
-            newProfileImageUrl = "/uploads/profile/" + user.getUserId() + "_" + profileImageFile.getOriginalFilename();
-            // 💡 여기서 실제 파일을 저장하는 코드가 들어가야 합니다.
+                // 2. 파일 이름 설정 (UUID 사용)
+                String originalFilename = profileImageFile.getOriginalFilename();
+                String fileExtension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+
+                // 3. 파일 저장
+                Path filePath = Paths.get(UPLOAD_DIR + uniqueFileName);
+                Files.copy(profileImageFile.getInputStream(), filePath);
+
+                // 4. 웹 접근 URL 생성 (DB 저장용)
+                // WebConfig에서 /uploads/profile/** 로 매핑됩니다.
+                newProfileImageUrl = "/uploads/profile/" + uniqueFileName;
+                log.info("새 프로필 이미지 URL 생성: {}", newProfileImageUrl);
+
+            } catch (IOException e) {
+                log.error("프로필 이미지 저장 실패. 경로: {}", UPLOAD_DIR, e);
+                // 파일 저장 실패 시 프로필 업데이트를 중단하고 예외를 던집니다.
+                throw new RuntimeException("프로필 이미지 저장 중 오류가 발생했습니다.", e);
+            }
 
         } else if (request.getProfileImageUrl() != null && request.getProfileImageUrl().isEmpty()) {
-            // 💡 기존 이미지 URL 필드를 비웠다면, 이미지를 제거하는 것으로 처리할 수 있습니다.
+            // 💡 프로필 수정 폼에서 기존 이미지를 삭제한 경우 (clear 요청)
             newProfileImageUrl = null;
         }
 
@@ -90,6 +121,9 @@ public class UserService {
                 request.getBio(),
                 newProfileImageUrl
         );
+        userRepository.save(user); // 변경 사항 저장
         return user;
     }
+
+    // 📌 User 클래스에 updateProfile 메서드가 있다고 가정
 }

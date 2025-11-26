@@ -112,9 +112,7 @@
 
     <form th:action="@{/users/profile/edit}"
           method="post"
-          enctype="multipart/form-data">
-
-        <label for="username" class="form-label">사용자 이름</label>
+          enctype="multipart/form-data"> <label for="username" class="form-label">사용자 이름</label>
         <input type="text"
                id="username"
                name="username"
@@ -132,8 +130,7 @@
         <label for="profileImageFile" class="form-label">프로필 이미지 업로드</label>
         <input type="file"
                id="profileImageFile"
-               name="profileImageFile" class="form-input-file"
-               accept="image/*">
+               name="profileImageFile" class="form-input-file" accept="image/*">
 
         <input type="hidden" name="profileImageUrl" th:value="${profileUpdateRequest.profileImageUrl}">
 
