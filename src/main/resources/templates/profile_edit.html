@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <title>프로필 수정 - X.com Clone</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/style1.css}">
     <style>
+        /* 📌 body의 기본 텍스트 색상을 흰색으로 설정 */
+        body {
+            background-color: #000000;
+            color: #E7E9EA; /* 거의 흰색 */
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+        }
         .edit-container {
             width: 100%;
             max-width: 500px;
@@ -17,7 +25,7 @@
         }
         .form-label {
             display: block;
-            color: #E7E9EA;
+            color: #E7E9EA; /* 흰색 유지 */
             font-weight: bold;
             margin-bottom: 5px;
             font-size: 14px;
@@ -29,7 +37,7 @@
             background-color: #1A1A1A;
             border: 1px solid #2F3336;
             border-radius: 4px;
-            color: #E7E9EA;
+            color: #E7E9EA; /* 흰색 유지 */
             box-sizing: border-box;
         }
         /* 파일 입력 필드 기본 색상 조정 */
@@ -40,13 +48,13 @@
             background-color: #1A1A1A;
             border: 1px solid #2F3336;
             border-radius: 4px;
-            color: #E7E9EA;
+            color: #E7E9EA; /* 흰색 유지 */
             box-sizing: border-box;
         }
         /* 파일 입력 필드 '파일 선택' 버튼 스타일 조정 (브라우저마다 다를 수 있음) */
         .form-input-file::file-selector-button {
             background-color: #2F3336;
-            color: #E7E9EA;
+            color: #E7E9EA; /* 흰색 유지 */
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
@@ -61,6 +69,36 @@
             color: #F4212E;
             margin-bottom: 15px;
             font-size: 14px;
+        }
+        /* 📌 프로필 저장 버튼 (action-button 스타일 재정의) */
+        .action-button-submit {
+            background-color: #1DA1F2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 9999px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .action-button-submit:hover {
+            background-color: #1A92DA;
+        }
+        /* 📌 취소 버튼 스타일 재정의 */
+        .action-button-cancel {
+            background-color: transparent;
+            color: #E7E9EA; /* 흰색으로 변경 */
+            border: 1px solid #71767B;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .action-button-cancel:hover {
+            background-color: #0E1418;
         }
     </style>
 </head>
@@ -102,13 +140,12 @@
 
         <div class="mt-6 flex justify-between items-center">
             <a th:href="@{/users/profile/{username}(username=${session.currentUser?.username})}"
-               class="action-button-small"
-               style="background-color: transparent; color: #71767B; border: 1px solid #71767B;">
+               class="action-button-cancel">
                 취소
             </a>
 
             <button type="submit"
-                    class="action-button">
+                    class="action-button-submit">
                 프로필 저장
             </button>
         </div>
