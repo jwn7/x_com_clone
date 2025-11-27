@@ -6,7 +6,6 @@
     <title>X.com Clone - Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/style.css">
-
 </head>
 <body>
 
@@ -19,7 +18,6 @@
 <div th:if="${successMessage}" class="success-banner success-banner-fixed">
     <p th:text="${successMessage}" style="margin: 0;"></p>
 </div>
-
 
 <div class="main-container">
 
@@ -50,12 +48,10 @@
         <div th:if="${currentUser != null}" class="profile-section mt-auto">
             <a th:href="@{/users/profile/{username}(username=${currentUser.username})}"
                style="text-decoration: none; display: block; color: inherit;">
-
                 <div class="flex items-center mb-3">
                     <img th:src="@{${currentUser.profileImageUrl ?: '/images/default_profile.png'}}"
                          alt="Profile Image"
                          class="profile-image-small mr-3">
-
                     <div>
                         <p class="text-lg font-bold text-white" th:text="${currentUser.username} + '님'"></p>
                         <p class="text-sm" style="color: #71767B;">
@@ -63,166 +59,151 @@
                         </p>
                     </div>
                 </div>
-
             </a>
-
             <form th:action="@{/users/logout}" method="post">
-                <button type="submit" class="action-button">
-                    로그아웃
-                </button>
+                <button type="submit" class="action-button">로그아웃</button>
             </form>
         </div>
     </div>
+
     <div class="timeline">
         <div class="header">홈</div>
 
         <div th:if="${currentUser != null}" class="post-input-area"
              style="border-bottom: 8px solid #2F3336;">
-
-            <form th:action="@{/posts}"
-                  method="post"
-                  enctype="multipart/form-data"
-                  style="display: flex; flex: 1;">
-
+            <form onsubmit="createPost(event)" enctype="multipart/form-data" style="display: flex; flex: 1;">
                 <img th:src="@{${currentUser.profileImageUrl ?: '/images/default_profile.png'}}"
-                     alt="User Image"
-                     class="profile-image">
-
+                     alt="User Image" class="profile-image">
                 <div class="post-header-grid ml-3">
-                    <textarea
-                            id="postContent"
-                            name="content" rows="3"
-                            placeholder="무슨 일이 일어나고 있나요?"
-                    ></textarea>
+                    <textarea id="postContent" name="content" rows="3"
+                              placeholder="무슨 일이 일어나고 있나요?"></textarea>
 
-                    <input
-                            id="postFiles"
-                            type="file"
-                            name="files" multiple
-                            style="margin-top: 10px; color: #E7E9EA;"
-                    >
+                    <input id="postFiles" type="file" name="mediaFiles" multiple
+                           style="margin-top: 10px; color: #E7E9EA;">
 
                     <div style="text-align: right; border-top: 1px solid #2F3336; padding-top: 10px;">
-                        <button id="postSubmitButton" type="submit"
-                                class="post-submit-btn">
-                            게시하기
-                        </button>
+                        <button type="submit" class="post-submit-btn">게시하기</button>
                     </div>
                 </div>
             </form>
         </div>
-        <div th:if="${posts.isEmpty()}" class="no-posts" style="padding: 20px; text-align: center; color: #71767B;">
+
+        <div th:if="${timelineItems.isEmpty()}" class="no-posts" style="padding: 20px; text-align: center; color: #71767B;">
             <p>아직 게시물이 없습니다.</p>
         </div>
 
-        <div th:each="post : ${posts}" class="post-card"
-             th:id="|post-${post.postId}|">
+        <div th:each="item : ${timelineItems}" class="post-card" th:id="|item-${item.originalPost.postId}|">
+            <div th:if="${item.isRetweet}" class="retweet-indicator"
+                 style="font-size: 13px; color: #71767B; margin-left: 55px; margin-bottom: 5px;">
+                🔁 <span th:text="${item.actionUser.username}"></span>님이 리트윗했습니다.
+            </div>
 
-            <img th:src="@{${post.user.profileImageUrl ?: '/images/default_profile.png'}}"
-                 alt="Author Image"
-                 class="profile-image">
+            <img th:src="@{${item.originalPost.user.profileImageUrl ?: '/images/default_profile.png'}}"
+                 alt="Author Image" class="profile-image">
 
             <div class="post-header-grid">
                 <div class="post-info flex items-center">
-                    <a th:href="@{/users/profile/{username}(username=${post.user.username})}"
+                    <a th:href="@{/users/profile/{username}(username=${item.originalPost.user.username})}"
                        class="profile-link flex items-center hover:text-gray-200"
                        style="text-decoration: none; color: inherit;">
-                        <span th:text="${post.user.username}" class="font-bold hover:underline">Display Name</span>
+                        <span th:text="${item.originalPost.user.username}" class="font-bold hover:underline"></span>
                         <span style="font-weight: normal; color: #71767B; margin-left: 5px;">
-                            @<span th:text="${post.user.username}">Username</span>
+                            @<span th:text="${item.originalPost.user.username}"></span>
                         </span>
                     </a>
                     <span style="color: #71767B; margin-left: 5px;">·</span>
-                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}"
-                          style="color: #71767B; margin-left: 5px;">시간</span>
+                    <span th:text="${#temporals.format(item.originalPost.createdAt, 'HH:mm')}"
+                          style="color: #71767B; margin-left: 5px;"></span>
                 </div>
 
                 <div class="post-content">
-                    <p th:text="${post.content}">여기에 포스트 내용이 들어갑니다.</p>
+                    <p th:text="${item.originalPost.content}"></p>
                 </div>
 
-                <div class="post-images" th:if="${post.mediaList != null}">
-                    <img th:each="media : ${post.mediaList}"
-                         th:src="@{${media.fileUrl}}"
-                         alt="첨부 이미지"
-                         style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
+                <div class="post-images" th:if="${item.originalPost.mediaList != null}">
+                    <img th:each="media : ${item.originalPost.mediaList}" th:src="@{${media.fileUrl}}"
+                         alt="첨부 이미지" style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
                 </div>
 
-                <div th:if="${currentUser != null and post.user.userId == currentUser.userId}"
+                <div th:if="${currentUser != null and item.originalPost.user.userId == currentUser.userId}"
                      style="margin-top: 10px; text-align: left;">
-                    <form th:action="@{|/posts/${post.postId}/delete|}" method="post">
-                        <button type="submit"
-                                style="background: transparent; color: #F4212E; border: none; cursor: pointer; font-size: 14px;">
-                            삭제
-                        </button>
-                    </form>
+                    <button type="button"
+                            style="background: transparent; color: #F4212E; border: none; cursor: pointer; font-size: 14px;"
+                            th:onclick="|deletePost(${item.originalPost.postId})|">
+                        삭제
+                    </button>
                 </div>
 
                 <div class="post-actions">
-
                     <div style="display: flex; align-items: center; gap: 10px;">
-
-                        <form th:if="${currentUser != null}"
-                              th:action="@{|/posts/${post.postId}/like|}"
-                              method="post"
-                              style="display: inline;">
-                            <input type="hidden" name="userId"
-                                   th:value="${currentUser.userId}" />
-                            <button type="submit"
-                                    style="background: transparent; border: none; color: #E7E9EA; cursor: pointer;">
-                                ❤️
-                                <span th:text="${#lists.size(post.likes)}">0</span>
+                        <form th:if="${currentUser != null}" th:action="@{|/posts/${item.originalPost.postId}/like|}" method="post" style="display: inline;">
+                            <button type="submit" style="background: transparent; border: none; color: #E7E9EA; cursor: pointer;">
+                                ❤️ <span th:text="${#lists.size(item.originalPost.likes)}">0</span>
                             </button>
                         </form>
 
-                        <span th:if="${currentUser == null}">
-                            ❤️ <span th:text="${#lists.size(post.likes)}">0</span>
-                        </span>
+                        <form th:if="${currentUser != null}" th:action="@{|/posts/${item.originalPost.postId}/retweet|}" method="post" style="display: inline;">
+                            <button type="submit" style="background: transparent; border: none; color: #E7E9EA; cursor: pointer;">
+                                🔁 <span th:text="${item.retweetCount}">0</span>
+                            </button>
+                        </form>
 
                         <span style="color: #71767B; margin-left: 10px;">
-                            💬 <span th:text="${#lists.size(post.replies)}">0</span> 댓글
+                            💬 <span th:text="${#lists.size(item.originalPost.replies)}">0</span> 댓글
                         </span>
-                    </div>
-
-                    <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid #2F3336;"
-                         th:if="${post.replies != null and !post.replies.isEmpty()}">
-                        <div th:each="reply : ${post.replies}" style="margin-bottom: 4px;">
-                            <b th:text="${reply.user.username}">user</b>
-                            <span style="color: #71767B; font-size: 12px; margin-left: 4px;"
-                                  th:text="${#temporals.format(reply.createdAt, 'MM-dd HH:mm')}">
-                                11-24 13:20
-                            </span>
-                            <div th:text="${reply.content}" style="margin-left: 4px;"></div>
-                        </div>
-                    </div>
-
-                    <form th:if="${currentUser != null}"
-                          th:action="@{|/posts/${post.postId}/reply|}"
-                          method="post"
-                          class="post-reply-form"
-                          style="margin-top: 8px; display: flex; gap: 6px;">
-
-                        <input type="hidden" name="userId"
-                               th:value="${currentUser.userId}" />
-
-                        <input type="text"
-                               name="content"
-                               placeholder="답글을 남겨보세요"
-                               maxlength="280" />
-
-                        <button type="submit"
-                                class="post-reply-button">
-                            답글
-                        </button>
-                    </form>
-
-                    <div th:if="${currentUser == null}"
-                         style="margin-top: 8px; color: #71767B; font-size: 12px;">
-                        댓글과 좋아요를 남기려면
-                        <a th:href="@{/users/login}" style="color: #1DA1F2;">로그인</a> 해주세요.
                     </div>
                 </div>
             </div>
+
+            <div th:if="${currentUser != null}" class="reply-input-area" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #2F3336;">
+                <form th:action="@{|/posts/${item.originalPost.postId}/reply|}" method="post" style="display: flex; flex: 1; align-items: flex-start;">
+                    <img th:src="@{${currentUser.profileImageUrl ?: '/images/default_profile.png'}}"
+                         alt="User Image" class="profile-image profile-image-small mr-3" style="width: 32px; height: 32px;">
+                    <div class="flex-1">
+                        <textarea name="content" rows="1" class="reply-textarea"
+                                  placeholder="내 답글을 게시하세요."
+                                  style="width: 100%; resize: none; border: none; background: transparent; color: #E7E9EA; padding: 5px 0; outline: none;"></textarea>
+                        <div style="text-align: right; margin-top: 5px;">
+                            <button type="submit" class="post-submit-btn" style="padding: 5px 15px; font-size: 14px;">답글</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div th:if="${!item.originalPost.replies.isEmpty()}" class="replies-section"
+                 style="padding-top: 10px; margin-top: 10px;">
+                <h4 style="color: #E7E9EA; font-size: 16px; margin-bottom: 15px; border-bottom: 1px dashed #2F3336; padding-bottom: 5px;">
+                    답글 (<span th:text="${#lists.size(item.originalPost.replies)}">0</span>)
+                </h4>
+
+                <div th:each="reply : ${item.originalPost.replies}" class="reply-card"
+                     style="display: flex; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #2F3336;">
+
+                    <img th:src="@{${reply.user.profileImageUrl ?: '/images/default_profile.png'}}"
+                         alt="Reply Author Image" class="profile-image-small mr-3" style="width: 32px; height: 32px;">
+
+                    <div class="flex-1">
+                        <div class="reply-info flex items-center mb-1">
+                            <span th:text="${reply.user.username}" class="font-bold text-white mr-2"></span>
+                            <span style="color: #71767B; font-size: 13px;">
+                                @<span th:text="${reply.user.username}"></span>
+                            </span>
+                            <span style="color: #71767B; margin-left: 5px;">·</span>
+                            <span th:text="${#temporals.format(reply.createdAt, 'HH:mm')}"
+                                  style="color: #71767B; margin-left: 5px; font-size: 13px;"></span>
+                        </div>
+
+                        <p th:text="${reply.content}" style="color: #E7E9EA; font-size: 15px;"></p>
+                    </div>
+                </div>
+                <style>
+                    .reply-card:last-child {
+                        border-bottom: none !important;
+                        padding-bottom: 0 !important;
+                    }
+                </style>
+            </div>
+
         </div>
     </div>
 
@@ -231,6 +212,75 @@
     </div>
 
 </div>
+
+<script>
+    // 전역 메시지 함수
+    window.showMessage = function(message) {
+        alert(message);
+    };
+
+    // 게시글 삭제 (AJAX 요청 -> 백엔드 deletePost 매칭)
+    window.deletePost = async function(postId) {
+        if (!confirm('정말 이 게시물을 삭제하시겠습니까?')) return;
+
+        try {
+            // POST /posts/{postId}/delete 요청
+            const response = await fetch(`/posts/${postId}/delete`, { method: 'POST' });
+
+            if (response.ok) { // HTTP 200 OK
+                const postElement = document.getElementById(`item-${postId}`);
+                if (postElement) postElement.remove();
+                showMessage("게시물이 삭제되었습니다.");
+            } else if (response.status === 403) { // HTTP 403 Forbidden
+                showMessage("삭제 권한이 없습니다.");
+            } else if (response.status === 404) { // HTTP 404 Not Found
+                showMessage("게시물을 찾을 수 없습니다.");
+            } else if (response.status === 401) { // HTTP 401 Unauthorized
+                showMessage("로그인이 필요합니다.");
+                window.location.href = '/users/login';
+            } else {
+                const errorText = await response.text();
+                showMessage("삭제 실패: " + errorText);
+            }
+        } catch (error) {
+            console.error(error);
+            showMessage("네트워크 오류가 발생했습니다.");
+        }
+    };
+
+    // 게시글 작성 (AJAX 요청 -> 백엔드 createPost 매칭)
+    window.createPost = async function(event) {
+        event.preventDefault();
+        const content = document.getElementById('postContent').value.trim();
+        const files = document.getElementById('postFiles').files;
+
+        if (!content && (!files || files.length === 0)) {
+            showMessage("내용 또는 파일이 필요합니다.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("content", content);
+        for (let i = 0; i < files.length; i++) formData.append("mediaFiles", files[i]);
+
+        try {
+            // POST /posts 요청
+            const response = await fetch('/posts', { method: 'POST', body: formData });
+
+            if (response.redirected) {
+                window.location.href = response.url; // 백엔드 리다이렉트 처리
+            } else if (response.ok) {
+                window.location.reload();
+            } else {
+                const errorText = await response.text();
+                showMessage("게시물 작성 실패: " + errorText);
+            }
+        } catch (error) {
+            console.error(error);
+            showMessage("네트워크 오류가 발생했습니다.");
+        }
+    };
+</script>
 
 </body>
 </html>

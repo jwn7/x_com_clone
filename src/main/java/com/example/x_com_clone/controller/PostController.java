@@ -1,10 +1,13 @@
 package com.example.x_com_clone.controller;
 
-import com.example.x_com_clone.domain.Post;
 import com.example.x_com_clone.domain.User;
+import com.example.x_com_clone.dto.TimelineItemDto;
 import com.example.x_com_clone.service.LikeService;
 import com.example.x_com_clone.service.PostService;
 import com.example.x_com_clone.service.ReplyService;
+import com.example.x_com_clone.service.TimelineService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -24,93 +27,78 @@ public class PostController {
     private final PostService postService;
     private final LikeService likeService;
     private final ReplyService replyService;
+    private final TimelineService timelineService;
 
     /**
-     * 타임라인(게시글 목록) 화면
+     * 타임라인 (게시글 목록)
      */
     @GetMapping
     public String listPosts(@RequestParam(required = false) String keyword,
                             Model model, HttpSession session) {
 
-        List<Post> posts = (keyword == null || keyword.isBlank())
-                ? postService.findAllPosts()
-                : postService.searchPosts(keyword);
+        List<TimelineItemDto> timelineItems = timelineService.getGlobalTimeline();
+        model.addAttribute("timelineItems", timelineItems);
 
-        model.addAttribute("posts", posts);
+        model.addAttribute("currentUser", session.getAttribute("currentUser"));
 
-        User currentUser = (User) session.getAttribute("currentUser");
-        model.addAttribute("currentUser", currentUser);
-
-        return "index"; // 템플릿 이름이 index.html이라고 가정합니다.
+        return "index";
     }
 
     /**
-     * 게시물 생성 (POST /posts)
-     * - HTML 폼에서 직접 파일을 전송받아 처리합니다.
+     * 게시글 작성
      */
     @PostMapping
     public String createPost(@RequestParam String content,
-                             @RequestParam(value = "files", required = false) List<MultipartFile> files, // files 파라미터명과 일치
+                             @RequestParam(value = "mediaFiles", required = false) List<MultipartFile> mediaFiles,
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
 
         User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) return "redirect:/users/login";
 
-        // 1. 로그인 확인
-        if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "게시물을 작성하려면 로그인해야 합니다.");
-            return "redirect:/users/login";
-        }
+        boolean hasContent = content != null && !content.isBlank();
+        boolean hasMedia = mediaFiles != null &&
+                mediaFiles.stream().anyMatch(f -> f.getSize() > 0);
 
-        // 2. 내용 또는 파일이 없으면 오류 처리
-        if (content.isBlank() && (files == null || files.isEmpty())) {
-            redirectAttributes.addFlashAttribute("errorMessage", "내용 또는 이미지를 첨부해주세요.");
+        if (!hasContent && !hasMedia) {
+            redirectAttributes.addFlashAttribute("errorMessage", "내용 또는 파일이 필요합니다.");
             return "redirect:/posts";
         }
 
-        try {
-            // 3. PostService 호출 (게시물 및 파일 저장)
-            postService.createPost(currentUser.getUserId(), content, files);
+        postService.createPost(currentUser.getUserId(), content, mediaFiles);
+        redirectAttributes.addFlashAttribute("successMessage", "게시글 등록됨");
 
-        } catch (NoSuchElementException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보를 찾을 수 없습니다.");
-        } catch (Exception e) {
-            // 파일 업로드, DB 저장 등 기타 오류
-            redirectAttributes.addFlashAttribute("errorMessage", "게시물 작성 중 오류가 발생했습니다: " + e.getMessage());
-        }
-
-        // 4. 성공 시 타임라인으로 리다이렉트
         return "redirect:/posts";
     }
 
     /**
-     * 게시물 삭제 (POST /posts/{postId}/delete)
-     * - HTML 폼 제출로 처리합니다.
+     * 게시글 삭제 (AJAX 요청에 대응하여 ResponseEntity 반환)
      */
     @PostMapping("/{postId}/delete")
-    public String deletePost(@PathVariable Long postId,
-                             HttpSession session,
-                             RedirectAttributes redirectAttributes) {
+    @ResponseBody // 응답 본문을 직접 작성 (뷰 템플릿 사용 안 함)
+    public ResponseEntity<String> deletePost(@PathVariable Long postId,
+                                             HttpSession session) {
 
         User currentUser = (User) session.getAttribute("currentUser");
-
         if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "삭제 권한이 없습니다. 로그인하세요.");
-            return "redirect:/users/login";
+            // 401 Unauthorized (미인증)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
         try {
+            // 서비스 계층 호출
             postService.deletePost(postId, currentUser.getUserId());
-            redirectAttributes.addFlashAttribute("successMessage", "게시물이 성공적으로 삭제되었습니다.");
-        } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "게시물을 찾을 수 없습니다.");
-        } catch (IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "삭제 권한이 없습니다. 본인의 게시물만 삭제할 수 있습니다.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "삭제 중 오류가 발생했습니다.");
-        }
 
-        return "redirect:/posts";
+            // 200 OK (성공)
+            return ResponseEntity.ok("게시물이 성공적으로 삭제되었습니다.");
+
+        } catch (NoSuchElementException e) {
+            // 404 Not Found (게시글 없음)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("게시물을 찾을 수 없습니다.");
+        } catch (Exception e) {
+            // 500 Internal Server Error (기타 오류)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("게시물 삭제 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -118,38 +106,82 @@ public class PostController {
      */
     @PostMapping("/{postId}/like")
     public String toggleLike(@PathVariable Long postId,
-                             @RequestParam Long userId,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes,
                              @RequestHeader(value = "Referer", required = false) String referer) {
 
-        likeService.toggleLike(postId, userId);
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) return "redirect:/users/login";
 
-        if (referer != null && !referer.isBlank()) {
-            return "redirect:" + referer;
-        }
+        boolean wasLiked = likeService.hasUserLiked(postId, currentUser.getUserId());
+        likeService.toggleLike(postId, currentUser.getUserId());
+
+        redirectAttributes.addFlashAttribute("successMessage",
+                wasLiked ? "좋아요 취소" : "좋아요 완료");
+
+        if (referer != null && !referer.isBlank()) return "redirect:" + referer;
         return "redirect:/posts";
     }
 
     /**
-     * 댓글 달기
+     * 댓글 작성 (수정됨: IllegalArgumentException 처리 추가)
      */
     @PostMapping("/{postId}/reply")
     public String addReply(@PathVariable Long postId,
-                           @RequestParam Long userId,
                            @RequestParam String content,
+                           HttpSession session,
+                           RedirectAttributes redirectAttributes,
                            @RequestHeader(value = "Referer", required = false) String referer) {
 
-        if (content == null || content.isBlank()) {
-            if (referer != null && !referer.isBlank()) {
-                return "redirect:" + referer;
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) return "redirect:/users/login";
+
+        if (content.isBlank()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "댓글 입력 필요");
+            return referer != null ? "redirect:" + referer : "redirect:/posts";
+        }
+
+        try {
+            // 서비스 호출
+            // postId와 currentUserId를 인자로 넘김 (ReplyService에서 매개변수 순서: postId, userId)
+            replyService.addReply(postId, currentUser.getUserId(), content);
+            redirectAttributes.addFlashAttribute("successMessage", "댓글 작성됨");
+
+        } catch (IllegalArgumentException e) {
+            // ReplyService에서 Post나 User를 찾지 못했을 때 던지는 예외를 캐치
+            // e.getMessage()를 사용할 수도 있지만, 사용자 친화적인 메시지를 직접 제공합니다.
+            if (e.getMessage().contains("Post not found")) {
+                redirectAttributes.addFlashAttribute("errorMessage", "댓글을 달 게시글을 찾을 수 없습니다. (ID: " + postId + ")");
+            } else if (e.getMessage().contains("User not found")) {
+                redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "댓글 작성 중 오류가 발생했습니다.");
             }
-            return "redirect:/posts";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "댓글 작성 중 알 수 없는 오류가 발생했습니다.");
         }
 
-        replyService.addReply(postId, userId, content);
+        if (referer != null && !referer.isBlank()) return "redirect:" + referer;
+        return "redirect:/posts";
+    }
 
-        if (referer != null && !referer.isBlank()) {
-            return "redirect:" + referer;
-        }
+    /**
+     * 리트윗 토글
+     */
+    @PostMapping("/{postId}/retweet")
+    public String toggleRetweet(@PathVariable Long postId,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes,
+                                @RequestHeader(value = "Referer", required = false) String referer) {
+
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) return "redirect:/users/login";
+
+        boolean isRetweeted = postService.toggleRetweet(currentUser.getUserId(), postId);
+        redirectAttributes.addFlashAttribute("successMessage",
+                isRetweeted ? "리트윗됨" : "리트윗 취소");
+
+        if (referer != null && !referer.isBlank()) return "redirect:" + referer;
         return "redirect:/posts";
     }
 }

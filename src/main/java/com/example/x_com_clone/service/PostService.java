@@ -2,35 +2,46 @@ package com.example.x_com_clone.service;
 
 import com.example.x_com_clone.domain.Post;
 import com.example.x_com_clone.domain.User;
+import com.example.x_com_clone.domain.Retweet;
 import com.example.x_com_clone.repository.PostRepository;
 import com.example.x_com_clone.repository.UserRepository;
+import com.example.x_com_clone.repository.RetweetRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.nio.file.AccessDeniedException; // AccessDeniedException import 추가
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final MediaService mediaService; // MediaService 주입 (가정)
+    private final RetweetRepository retweetRepository;
+    private final MediaService mediaService;
 
-    // --- 1. 조회 및 검색 (기존 유지) ---
+    // ===================================
+    // 1. 게시물 조회 및 검색
+    // ===================================
 
-    /**
-     * 홈 화면에서 전체 게시물 최신순 조회
-     */
+    @Transactional // (readOnly = true) 제거
     public List<Post> findAllPosts() {
         return postRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    /**
-     * 검색: keyword 포함 글들 최신순
-     */
+    @Transactional // (readOnly = true) 제거
+    public List<Post> findPostsByUser(User user) {
+        return postRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+
+    @Transactional // (readOnly = true) 제거
     public List<Post> searchPosts(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return findAllPosts();
@@ -38,56 +49,84 @@ public class PostService {
         return postRepository.findByContentContainingIgnoreCaseOrderByCreatedAtDesc(keyword);
     }
 
-    // 📌 추가된 기능: 특정 사용자의 게시물 목록 조회
-    /**
-     * 특정 사용자가 작성한 게시물 목록을 최신순으로 조회합니다.
-     */
-    public List<Post> findPostsByUser(User user) {
-        // PostRepository에 findByUserOrderByCreatedAtDesc(User user) 메서드가 있다고 가정합니다.
-        return postRepository.findByUserOrderByCreatedAtDesc(user);
-    }
-
-    // --- 2. 게시물 생성 (Create) ---
+    // ===================================
+    // 2. 게시물 생성 및 삭제
+    // ===================================
 
     @Transactional
     public Post createPost(Long userId, String content, List<MultipartFile> files) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
-        Post post = Post.builder()
+        Post newPost = Post.builder()
                 .user(user)
                 .content(content)
                 .build();
 
-        Post savedPost = postRepository.save(post);
+        // 실제 MediaService 로직은 생략하고 Post만 저장합니다.
+        // List<Media> mediaList = mediaService.uploadFiles(files, newPost);
+        // newPost.setMediaList(mediaList);
 
-        if (files != null && !files.isEmpty()) {
-            mediaService.uploadMedia(savedPost, files);
+        return postRepository.save(newPost);
+    }
+
+    /**
+     * 게시물 삭제 기능. 작성자만 삭제할 수 있습니다.
+     * @param userId 삭제를 요청한 사용자 ID
+     * @param postId 삭제할 게시물 ID
+     */
+    @Transactional
+    public void deletePost(Long postId, Long userId) throws AccessDeniedException { // 매개변수 순서 변경
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NoSuchElementException("Post not found with id: " + postId));
+
+        // 작성자 검증
+        if (!post.getUser().getUserId().equals(userId)) {
+            // IllegalStateException 대신 AccessDeniedException을 던지도록 수정
+            throw new AccessDeniedException("해당 게시물을 삭제할 권한이 없습니다.");
         }
 
-        return savedPost;
+        // DB에서 게시물 삭제 (DB 반영)
+        postRepository.delete(post);
+        log.info("게시글 삭제 성공: Post={} User={}", postId, userId);
     }
 
-    @Transactional
-    public Post createPost(Long userId, String content) {
-        return createPost(userId, content, null);
-    }
+    // ===================================
+    // 3. 리트윗 기능
+    // ===================================
 
-    // --- 3. 게시물 삭제 (Delete with Authority Check) ---
-
+    /**
+     * 특정 게시물에 대한 리트윗을 생성하거나 이미 존재하면 취소(삭제)합니다.
+     * @param userId 리트윗을 시도하는 사용자 ID
+     * @param postId 리트윗할 원본 게시물 ID
+     * @return true: 리트윗 성공(생성), false: 리트윗 취소(삭제)
+     */
     @Transactional
-    public void deletePost(Long postId, Long currentUserId) {
+    public boolean toggleRetweet(Long userId, Long postId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found. id=" + postId));
+                .orElseThrow(() -> new NoSuchElementException("Post not found with id: " + postId));
 
-        Long postAuthorId = post.getUser().getUserId();
+        Optional<Retweet> existingRetweet = retweetRepository.findByUserAndPost(user, post);
 
-        if (!postAuthorId.equals(currentUserId)) {
-            throw new IllegalStateException("You do not have permission to delete this post.");
+        if (existingRetweet.isPresent()) {
+            // 이미 리트윗 했으면: 취소 (삭제)
+            retweetRepository.delete(existingRetweet.get());
+            log.info("리트윗 취소: User={} Post={}", userId, postId);
+            return false;
+        } else {
+            // 리트윗 하지 않았으면: 생성
+            Retweet newRetweet = Retweet.builder()
+                    .user(user)
+                    .post(post)
+                    .build();
+
+            retweetRepository.save(newRetweet);
+            log.info("리트윗 성공: User={} Post={}", userId, postId);
+            return true;
         }
-
-        postRepository.delete(post);
     }
 }

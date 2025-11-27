@@ -20,7 +20,6 @@ public class Post {
     @Column(name = "post_id")
     private Long postId;
 
-    // 글쓴 사람
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -31,27 +30,21 @@ public class Post {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // 1 : N = Post : Media
     @OneToMany(mappedBy = "post",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY)
+            orphanRemoval = true)
     @Builder.Default
     private List<Media> mediaList = new ArrayList<>();
 
-    // 1 : N = Post : Like
     @OneToMany(mappedBy = "post",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY)
+            orphanRemoval = true)
     @Builder.Default
     private List<Like> likes = new ArrayList<>();
 
-    // 1 : N = Post : Reply
     @OneToMany(mappedBy = "post",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY)
+            orphanRemoval = true)
     @Builder.Default
     private List<Reply> replies = new ArrayList<>();
 

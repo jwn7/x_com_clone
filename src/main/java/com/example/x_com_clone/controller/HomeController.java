@@ -1,21 +1,21 @@
 package com.example.x_com_clone.controller;
 
-import com.example.x_com_clone.domain.Post;
-import com.example.x_com_clone.domain.User; // ⚠️ User 엔티티가 있어야 작동
-import com.example.x_com_clone.service.PostService;
+import com.example.x_com_clone.domain.User;
+import com.example.x_com_clone.dto.TimelineItemDto; // DTO import
+import com.example.x_com_clone.service.TimelineService; // 📌 TimelineService import
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import java.util.Collections;
 import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
 
-    private final PostService postService;
+    // private final PostService postService; // ❌ PostService 대신
+    private final TimelineService timelineService; // 📌 TimelineService 주입
 
     /**
      * 메인 페이지 (index.html) 렌더링
@@ -29,15 +29,12 @@ public class HomeController {
             model.addAttribute("currentUser", user);
         }
 
-        // 2. 포스트 목록 로딩 및 NULL 방지 처리 (posts.isEmpty() 오류 해결)
-        List<Post> posts = postService.findAllPosts();
+        // 2. 타임라인 목록 로딩 (Post와 Retweet 통합)
+        List<TimelineItemDto> timelineItems = timelineService.getGlobalTimeline();
 
-        if (posts == null) {
-            posts = Collections.emptyList();
-        }
-
-        // 3. Model에 "posts"로 추가
-        model.addAttribute("posts", posts);
+        // 3. Model에 "timelineItems"로 추가 (index.html에서 사용하는 변수명)
+        // posts가 아니라 timelineItems를 사용해야 index.html 오류 해결
+        model.addAttribute("timelineItems", timelineItems);
 
         return "index";
     }

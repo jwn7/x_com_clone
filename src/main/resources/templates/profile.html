@@ -87,6 +87,19 @@
         .follow-count-btn:hover {
             text-decoration: underline;
         }
+
+        /* 리트윗 표시 스타일 */
+        .retweet-indicator {
+            color: #1DA1F2; /* X.com (Twitter) Blue */
+            font-size: 13px;
+            margin-bottom: 5px;
+            padding-left: 55px; /* 프로필 이미지 공간 확보 */
+        }
+        .retweet-indicator svg {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -175,36 +188,68 @@
 
         <h4 class="text-xl font-bold mb-4">게시물</h4>
 
-        <div th:if="${posts == null or posts.isEmpty()}" class="no-posts" style="padding: 10px 0; text-align: center;">
-            <p class="text-secondary">작성된 게시물이 없습니다.</p>
+        <!-- 📌 posts 대신 timelineItems를 사용하도록 수정 -->
+        <div th:if="${timelineItems == null or timelineItems.isEmpty()}"
+             class="no-posts" style="padding: 10px 0; text-align: center;">
+            <p class="text-secondary">작성 또는 리트윗된 게시물이 없습니다.</p>
         </div>
 
-        <div th:each="post : ${posts}" class="post-card-profile">
-            <div style="flex-grow: 1;">
-                <div class="post-info-profile">
-                    <span th:text="${post.user.username}" class="font-bold" style="color: #E7E9EA;">Display Name</span>
-                    <span class="text-secondary" style="font-weight: normal; margin-left: 5px;">
-                        @<span th:text="${post.user.username}">Username</span>
-                    </span>
-                    <span class="text-secondary" style="margin-left: 5px;">·</span>
-                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm')}"
-                          class="text-secondary" style="margin-left: 5px;">시간</span>
+        <!-- 📌 timelineItems를 순회하며 리트윗 여부에 따라 다르게 렌더링 -->
+        <div th:each="item : ${timelineItems}" class="post-card-profile">
+            <!-- 1. 리트윗 표시 (item.isRetweet == true일 경우) -->
+            <!-- actionUser 필드를 사용하여 리트윗한 사용자를 표시합니다. -->
+            <div th:if="${item.isRetweet}" class="retweet-indicator">
+                <!-- 리트윗 아이콘 (SVG) -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75-6.75M4.5 12l6.75 6.75" />
+                </svg>
+                <span th:text="${item.actionUser.username}">Username</span>님이 리트윗했습니다.
+            </div>
+
+            <!-- 2. 게시물 본문 영역 -->
+            <!-- item.post 대신 item.originalPost를 사용하도록 수정 -->
+            <div th:with="postContent=${item.originalPost}" style="display: flex; flex-grow: 1; padding-top: 5px;">
+                <div style="width: 48px; min-width: 48px; margin-right: 10px;">
+                    <img th:src="${postContent.user.profileImageUrl ?: '/images/default-profile.png'}"
+                         alt="Profile"
+                         class="w-12 h-12 rounded-full object-cover">
                 </div>
 
-                <div class="post-content mb-2">
-                    <p th:text="${post.content}" style="color: #E7E9EA;">여기에 포스트 내용이 들어갑니다.</p>
-                </div>
+                <div style="flex-grow: 1;">
+                    <div class="post-info-profile">
+                        <a th:href="@{'/users/profile/' + ${postContent.user.username}}">
+                            <span th:text="${postContent.user.username}" class="font-bold hover:underline" style="color: #E7E9EA;">Display Name</span>
+                        </a>
+                        <span class="text-secondary" style="font-weight: normal; margin-left: 5px;">
+                            @<span th:text="${postContent.user.username}">Username</span>
+                        </span>
+                        <span class="text-secondary" style="margin-left: 5px;">·</span>
+                        <span th:text="${#temporals.format(postContent.createdAt, 'HH:mm')}"
+                              class="text-secondary" style="margin-left: 5px;">시간</span>
+                    </div>
 
-                <div class="post-images" th:if="${post.mediaList != null and not #lists.isEmpty(post.mediaList)}">
-                    <img th:each="media : ${post.mediaList}"
-                         th:src="@{${media.fileUrl}}"
-                         alt=""
-                         style="max-width: 100%; border-radius: 10px; margin-top: 5px;">
-                </div>
+                    <div class="post-content mb-2">
+                        <p th:text="${postContent.content}" style="color: #E7E9EA;">여기에 포스트 내용이 들어갑니다.</p>
+                    </div>
 
-                <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 14px; color: #8B98A5;">
-                    <span>❤️ <span th:text="${#lists.size(post.likes)}">0</span></span>
-                    <span>💬 <span th:text="${#lists.size(post.replies)}">0</span></span>
+                    <div class="post-images" th:if="${postContent.mediaList != null and not #lists.isEmpty(postContent.mediaList)}">
+                        <img th:each="media : ${postContent.mediaList}"
+                             th:src="@{${media.fileUrl}}"
+                             alt=""
+                             style="max-width: 100%; border-radius: 10px; margin-top: 5px;">
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 14px; color: #8B98A5;">
+                        <!-- ✅ 리트윗 횟수 표시 -->
+                        <span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75-6.75M4.5 12l6.75 6.75" />
+                            </svg>
+                            <span th:text="${item.retweetCount}">0</span>
+                        </span>
+                        <span>❤️ <span th:text="${#lists.size(postContent.likes)}">0</span></span>
+                        <span>💬 <span th:text="${#lists.size(postContent.replies)}">0</span></span>
+                    </div>
                 </div>
             </div>
         </div>
