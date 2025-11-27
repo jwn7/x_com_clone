@@ -1,22 +1,23 @@
 package com.example.x_com_clone.controller;
 
 import com.example.x_com_clone.domain.User;
-import com.example.x_com_clone.dto.UserSignupRequest;
 import com.example.x_com_clone.dto.UserProfileUpdateRequest;
+import com.example.x_com_clone.dto.UserSignupRequest;
+import com.example.x_com_clone.service.FollowService;
+import com.example.x_com_clone.service.PostService;
 import com.example.x_com_clone.service.UserService;
-import com.example.x_com_clone.service.PostService; // 📌 PostService import 추가
 import jakarta.servlet.http.HttpSession;
-// import jakarta.validation.Valid; // 📌 제거
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-// import org.springframework.validation.BindingResult; // 📌 제거
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Collections;
 
 @Controller
 @RequestMapping("/users")
@@ -25,10 +26,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UserController {
 
     private final UserService userService;
-    private final PostService postService; // 📌 PostService 필드 추가
+    private final PostService postService;
+    private final FollowService followService;
 
-    // --- 1. 회원가입 (Signup) ---
-    // ... (기존 signup 로직 유지) ...
+    // =========================
+    // 1. 회원가입 (Signup)
+    // =========================
+
     @GetMapping("/signup")
     public String signupForm(Model model) {
         model.addAttribute("signupRequest", new UserSignupRequest());
@@ -37,14 +41,16 @@ public class UserController {
 
     @PostMapping("/signup")
     public String signup(
-            @ModelAttribute("signupRequest") UserSignupRequest request, // ✅ @Valid 제거
+            @ModelAttribute("signupRequest") UserSignupRequest request,
             Model model,
             RedirectAttributes redirectAttributes
     ) {
         try {
             userService.signup(request);
-            redirectAttributes.addFlashAttribute("signupSuccessMessage",
-                    "회원가입에 성공했습니다! 이제 로그인하여 서비스를 이용해 보세요.");
+            redirectAttributes.addFlashAttribute(
+                    "signupSuccessMessage",
+                    "회원가입에 성공했습니다! 이제 로그인하여 서비스를 이용해 보세요."
+            );
             return "redirect:/";
 
         } catch (IllegalStateException e) {
@@ -54,7 +60,9 @@ public class UserController {
         }
     }
 
-    // --- 2. 로그인 및 로그아웃 (Login & Logout) ---
+    // =========================
+    // 2. 로그인 & 로그아웃
+    // =========================
 
     @GetMapping("/login")
     public String loginForm() {
@@ -86,34 +94,118 @@ public class UserController {
         return "redirect:/";
     }
 
-    // --- 3. 프로필 조회 (Profile) ---
+    // =========================
+    // 3. 프로필 조회 (Profile)
+    // =========================
 
     @GetMapping("/profile/{username}")
-    public String profile(@PathVariable String username, Model model) {
+    public String profile(@PathVariable String username,
+                          Model model,
+                          HttpSession session) {
+
         log.info("프로필 페이지 요청: @{}", username);
 
+        // 1) 프로필 대상 유저 조회
         User profileUser;
         try {
             profileUser = userService.findUserByUsername(username);
-
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다: " + username);
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "사용자를 찾을 수 없습니다: " + username
+            );
         }
 
-        // 📌 핵심 추가 로직: 해당 사용자의 게시물 목록을 가져와 모델에 추가
+        // 2) 해당 사용자의 게시글 목록 조회
         try {
             model.addAttribute("posts", postService.findPostsByUser(profileUser));
         } catch (Exception e) {
             log.error("사용자 게시물 로드 실패 (User: {}): {}", username, e.getMessage());
-            model.addAttribute("posts", java.util.Collections.emptyList()); // 오류 발생 시 빈 리스트 전달
+            model.addAttribute("posts", Collections.emptyList());
         }
 
+        // 3) 로그인 사용자 정보
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        boolean isMyProfile = false;
+        boolean isFollowing = false;
+
+        if (currentUser != null) {
+            isMyProfile = currentUser.getUserId().equals(profileUser.getUserId());
+
+            // 내 프로필이 아닐 때만 팔로우 여부 확인
+            if (!isMyProfile) {
+                isFollowing = followService.isFollowing(currentUser, profileUser);
+            }
+        }
+
+        // 4) 팔로워 / 팔로잉 수 + 리스트
+        long followerCount = followService.countFollowers(profileUser);
+        long followingCount = followService.countFollowing(profileUser);
+
         model.addAttribute("profileUser", profileUser);
+        model.addAttribute("isMyProfile", isMyProfile);
+        model.addAttribute("isFollowing", isFollowing);
+        model.addAttribute("followerCount", followerCount);
+        model.addAttribute("followingCount", followingCount);
+
+        // ✅ 모달에서 사용할 팔로워/팔로잉 목록
+        model.addAttribute("followers", followService.getFollowers(profileUser));
+        model.addAttribute("following", followService.getFollowing(profileUser));
+
         return "profile";
     }
 
-    // --- 4. 프로필 수정 (Edit Profile) ---
-    // ... (기존 editProfileForm/editProfile 로직 유지) ...
+    // =========================
+    // 4. 팔로우 / 언팔로우
+    // =========================
+
+    @PostMapping("/profile/{username}/follow")
+    public String follow(@PathVariable String username,
+                         HttpSession session,
+                         RedirectAttributes redirectAttributes) {
+
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            return "redirect:/users/login";
+        }
+
+        try {
+            User targetUser = userService.findUserByUsername(username);
+            followService.follow(currentUser, targetUser);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("팔로우 실패: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/users/profile/" + username;
+    }
+
+    @PostMapping("/profile/{username}/unfollow")
+    public String unfollow(@PathVariable String username,
+                           HttpSession session,
+                           RedirectAttributes redirectAttributes) {
+
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            return "redirect:/users/login";
+        }
+
+        try {
+            User targetUser = userService.findUserByUsername(username);
+            followService.unfollow(currentUser, targetUser);
+        } catch (IllegalArgumentException e) {
+            log.warn("언팔로우 실패: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/users/profile/" + username;
+    }
+
+    // =========================
+    // 5. 프로필 수정 (Edit Profile)
+    // =========================
+
     @GetMapping("/profile/edit")
     public String editProfileForm(HttpSession session, Model model) {
         User currentUser = (User) session.getAttribute("currentUser");
@@ -135,7 +227,7 @@ public class UserController {
 
     @PostMapping("/profile/edit")
     public String editProfile(
-            @ModelAttribute("profileUpdateRequest") UserProfileUpdateRequest request, // ✅ @Valid 제거
+            @ModelAttribute("profileUpdateRequest") UserProfileUpdateRequest request,
             @RequestParam(value = "profileImageFile", required = false) MultipartFile profileImageFile,
             HttpSession session,
             Model model,
@@ -149,11 +241,19 @@ public class UserController {
         }
 
         try {
-            User updatedUser = userService.updateProfile(currentUser.getUserId(), request, profileImageFile);
+            User updatedUser = userService.updateProfile(
+                    currentUser.getUserId(),
+                    request,
+                    profileImageFile
+            );
 
+            // 세션에 최신 정보로 갱신
             session.setAttribute("currentUser", updatedUser);
 
-            redirectAttributes.addFlashAttribute("signupSuccessMessage", "프로필 정보가 성공적으로 수정되었습니다.");
+            redirectAttributes.addFlashAttribute(
+                    "signupSuccessMessage",
+                    "프로필 정보가 성공적으로 수정되었습니다."
+            );
 
             return "redirect:/users/profile/" + updatedUser.getUsername();
 

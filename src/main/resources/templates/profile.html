@@ -7,7 +7,6 @@
     <link rel="stylesheet" th:href="@{/style1.css}">
 
     <style>
-        /* 📌 1. 배경색: X.com Dim 모드와 유사한 어두운 톤 유지 */
         body {
             background-color: #15202B;
             color: #E7E9EA;
@@ -19,15 +18,12 @@
             width: 100%;
             max-width: 600px;
             background-color: #15202B;
-            /* 📌 2. 컨테이너 테두리: #2F3336에서 #38444D로 밝게 조정 */
             border-left: 1px solid #38444D;
             border-right: 1px solid #38444D;
             min-height: 100vh;
         }
-        /* 프로필 페이지 상단 헤더 */
         .header {
             padding: 15px;
-            /* 📌 3. 헤더 하단 경계선: #38444D로 밝게 조정 */
             border-bottom: 1px solid #38444D;
             font-size: 20px;
             font-weight: bold;
@@ -37,12 +33,10 @@
             background-color: #15202B;
         }
 
-        /* 📌 프로필 이미지 */
         .profile-image-large {
             width: 130px;
             height: 130px;
             border-radius: 50%;
-            /* 📌 이미지 테두리: 변경된 배경색(#15202B)과 일치시켜 깔끔하게 분리 */
             border: 4px solid #15202B;
             object-fit: cover;
             margin-top: -65px;
@@ -51,7 +45,6 @@
         .action-button-small {
             background-color: transparent;
             color: #E7E9EA;
-            /* 📌 4. '프로필 수정' 버튼 테두리: #71767B에서 #38444D로 통일 */
             border: 1px solid #38444D;
             padding: 8px 16px;
             border-radius: 9999px;
@@ -61,15 +54,13 @@
             transition: background-color 0.2s;
         }
         .action-button-small:hover {
-            /* 📌 5. 호버 색상: 배경보다 약간 어둡게 */
             background-color: #0E1418;
         }
-        /* 📌 6. 부가 정보 텍스트 색상: #71767B에서 #8B98A5 (트위터 중간톤 회색)으로 조정 */
+
         .text-secondary {
             color: #8B98A5;
         }
 
-        /* 📌 게시물 목록을 위한 스타일 */
         .post-card-profile {
             border-bottom: 1px solid #38444D;
             padding: 15px 0;
@@ -79,6 +70,22 @@
             display: flex;
             align-items: center;
             margin-bottom: 5px;
+        }
+
+        /* ✅ 팔로워/팔로잉 카운트 버튼 스타일 */
+        .follow-count-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: #E7E9EA;
+            cursor: pointer;
+        }
+        .follow-count-btn span.number {
+            font-weight: bold;
+        }
+        .follow-count-btn:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -100,6 +107,7 @@
                  alt="Profile Image"
                  class="profile-image-large">
 
+            <!-- 내 프로필이면 프로필 수정 버튼 -->
             <div th:if="${session.currentUser != null and session.currentUser.userId == profileUser.userId}"
                  style="margin-top: 10px;">
                 <a th:href="@{/users/profile/edit}"
@@ -107,22 +115,61 @@
                     프로필 수정
                 </a>
             </div>
+
+            <!-- 다른 사람 프로필이면 팔로우/언팔로우 버튼 -->
+            <div th:if="${session.currentUser != null and session.currentUser.userId != profileUser.userId}"
+                 style="margin-top: 10px;">
+                <form th:if="${!isFollowing}"
+                      th:action="@{'/users/profile/' + ${profileUser.username} + '/follow'}"
+                      method="post">
+                    <button type="submit" class="action-button-small">
+                        팔로우
+                    </button>
+                </form>
+                <form th:if="${isFollowing}"
+                      th:action="@{'/users/profile/' + ${profileUser.username} + '/unfollow'}"
+                      method="post">
+                    <button type="submit" class="action-button-small">
+                        언팔로우
+                    </button>
+                </form>
+            </div>
         </div>
 
         <h3 class="text-2xl font-bold mb-1" th:text="${profileUser.username}">Display Name</h3>
-        <p class="text-sm mb-4 text-secondary">@<span th:text="${profileUser.username}">Username</span></p>
+        <p class="text-sm mb-2 text-secondary">@<span th:text="${profileUser.username}">Username</span></p>
 
         <p th:if="${profileUser.bio != null and profileUser.bio != ''}"
-           class="mb-4" th:text="${profileUser.bio}"></p>
+           class="mb-2" th:text="${profileUser.bio}"></p>
         <p th:unless="${profileUser.bio != null and profileUser.bio != ''}"
-           class="mb-4 text-secondary">작성된 소개가 없습니다.</p>
+           class="mb-2 text-secondary">작성된 소개가 없습니다.</p>
 
-        <p class="text-sm mb-4 text-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5" />
+        <p class="text-sm mb-2 text-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor"
+                 style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5" />
             </svg>
             가입일: <span th:text="${#temporals.format(profileUser.createdAt, 'yyyy년 M월')}">2023년 1월</span>
         </p>
+
+        <!-- ✅ 팔로잉 / 팔로워 숫자 + 클릭 시 모달 오픈 -->
+        <div class="flex gap-4 mb-4 text-sm">
+            <button type="button"
+                    class="follow-count-btn"
+                    onclick="openFollowModal('following')">
+                <span class="number" th:text="${followingCount}">0</span>
+                <span class="text-secondary">팔로잉</span>
+            </button>
+
+            <button type="button"
+                    class="follow-count-btn"
+                    onclick="openFollowModal('followers')">
+                <span class="number" th:text="${followerCount}">0</span>
+                <span class="text-secondary">팔로워</span>
+            </button>
+        </div>
 
         <hr style="border-color: #38444D; margin: 20px 0;">
 
@@ -133,7 +180,6 @@
         </div>
 
         <div th:each="post : ${posts}" class="post-card-profile">
-
             <div style="flex-grow: 1;">
                 <div class="post-info-profile">
                     <span th:text="${post.user.username}" class="font-bold" style="color: #E7E9EA;">Display Name</span>
@@ -162,12 +208,122 @@
                 </div>
             </div>
         </div>
-        <div class="mt-10">
+
+        <div class="mt-10 mb-6">
             <a th:href="@{/}" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
         </div>
     </div>
-
 </div>
+
+<!-- ✅ 팔로워/팔로잉 모달 -->
+<div id="followModal"
+     class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="bg-[#15202B] border border-[#38444D] rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <!-- 상단 탭 + 닫기 -->
+        <div class="flex items-center justify-between border-b border-[#38444D] px-4 py-3">
+            <div class="flex gap-4">
+                <button id="tab-followers"
+                        type="button"
+                        class="text-sm font-bold"
+                        onclick="showFollowTab('followers')">
+                    팔로워
+                </button>
+                <button id="tab-following"
+                        type="button"
+                        class="text-sm font-bold text-secondary"
+                        onclick="showFollowTab('following')">
+                    팔로잉
+                </button>
+            </div>
+            <button type="button"
+                    class="text-xl text-secondary"
+                    onclick="closeFollowModal()">
+                ✕
+            </button>
+        </div>
+
+        <!-- 리스트 영역 -->
+        <div class="overflow-y-auto">
+            <!-- 팔로워 목록 -->
+            <div id="followersList">
+                <div th:if="${#lists.isEmpty(followers)}"
+                     class="px-4 py-4 text-center text-secondary text-sm">
+                    아직 팔로워가 없습니다.
+                </div>
+
+                <a th:each="f : ${followers}"
+                   th:href="@{'/users/profile/' + ${f.follower.username}}"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-[#1E2732] cursor-pointer no-underline">
+                    <img th:src="${f.follower.profileImageUrl ?: '/images/default-profile.png'}"
+                         alt="Follower profile"
+                         class="w-10 h-10 rounded-full object-cover">
+                    <div>
+                        <div class="text-sm font-bold" th:text="${f.follower.username}">username</div>
+                        <div class="text-xs text-secondary">@<span th:text="${f.follower.username}">username</span></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 팔로잉 목록 -->
+            <div id="followingList" class="hidden">
+                <div th:if="${#lists.isEmpty(following)}"
+                     class="px-4 py-4 text-center text-secondary text-sm">
+                    아직 팔로잉 중인 사용자가 없습니다.
+                </div>
+
+                <a th:each="f : ${following}"
+                   th:href="@{'/users/profile/' + ${f.following.username}}"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-[#1E2732] cursor-pointer no-underline">
+                    <img th:src="${f.following.profileImageUrl ?: '/images/default-profile.png'}"
+                         alt="Following profile"
+                         class="w-10 h-10 rounded-full object-cover">
+                    <div>
+                        <div class="text-sm font-bold" th:text="${f.following.username}">username</div>
+                        <div class="text-xs text-secondary">@<span th:text="${f.following.username}">username</span></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openFollowModal(type) {
+        const modal = document.getElementById('followModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        showFollowTab(type);
+    }
+
+    function closeFollowModal() {
+        const modal = document.getElementById('followModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function showFollowTab(type) {
+        const followersList = document.getElementById('followersList');
+        const followingList = document.getElementById('followingList');
+        const tabFollowers = document.getElementById('tab-followers');
+        const tabFollowing = document.getElementById('tab-following');
+
+        if (type === 'followers') {
+            followersList.classList.remove('hidden');
+            followingList.classList.add('hidden');
+
+            tabFollowers.classList.remove('text-secondary');
+            tabFollowers.classList.add('text-white');
+            tabFollowing.classList.add('text-secondary');
+        } else {
+            followersList.classList.add('hidden');
+            followingList.classList.remove('hidden');
+
+            tabFollowing.classList.remove('text-secondary');
+            tabFollowing.classList.add('text-white');
+            tabFollowers.classList.add('text-secondary');
+        }
+    }
+</script>
 
 </body>
 </html>
