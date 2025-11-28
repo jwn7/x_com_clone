@@ -59,32 +59,25 @@
     <div class="p-4 overflow-y-auto">
         <form id="editProfileForm" th:action="@{/users/profile/edit}" method="post" enctype="multipart/form-data">
 
-            <div class="relative mb-16">
-                <div class="h-[150px] bg-[#333639] flex items-center justify-center text-white/50 relative group cursor-pointer">
-                    <i class="fa-solid fa-camera text-2xl group-hover:text-white/80 transition"></i>
-                    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition"></div>
-                </div>
+            <div class="flex justify-start mb-6 mt-4 ml-2">
+                <div class="relative w-[112px] h-[112px] group cursor-pointer">
+                    <img id="previewImage"
+                         th:src="${profileUpdateRequest.profileImageUrl ?: '/images/default_profile.png'}"
+                         class="w-full h-full rounded-full border-4 border-black object-cover bg-gray-700">
 
-                <div class="absolute -bottom-12 left-4">
-                    <div class="relative w-[112px] h-[112px] group cursor-pointer">
-                        <img id="previewImage"
-                             th:src="${profileUpdateRequest.profileImageUrl ?: '/images/default_profile.png'}"
-                             class="w-full h-full rounded-full border-4 border-black object-cover bg-gray-700">
-
-                        <div class="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-75 hover:bg-black/50 transition">
-                            <i class="fa-solid fa-camera text-white text-xl"></i>
-                        </div>
-
-                        <input type="file" id="profileImageFile" name="profileImageFile" accept="image/*"
-                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                               onchange="previewFile()">
+                    <div class="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-75 hover:bg-black/50 transition">
+                        <i class="fa-solid fa-camera text-white text-xl"></i>
                     </div>
+
+                    <input type="file" id="profileImageFile" name="profileImageFile" accept="image/*"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                           onchange="previewFile()">
                 </div>
             </div>
 
             <input type="hidden" name="profileImageUrl" th:value="${profileUpdateRequest.profileImageUrl}">
 
-            <div class="floating-label-group mt-4">
+            <div class="floating-label-group">
                 <label for="username" class="floating-label">이름</label>
                 <input type="text" id="username" name="username" class="form-input"
                        th:value="${profileUpdateRequest.username}" required placeholder=" ">
