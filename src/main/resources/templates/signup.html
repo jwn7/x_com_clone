@@ -1,80 +1,56 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>X.com 회원가입</title>
+    <meta charset="UTF-8">
+    <title>X 가입하기 / X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            background-color: #000000;
-            color: #E7E9EA;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+        body { background-color: #242d34; color: #E7E9EA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .modal-bg { background-color: rgba(91, 112, 131, 0.4); }
+        .form-control {
+            width: 100%; background: transparent; border: 1px solid #333639;
+            border-radius: 4px; padding: 16px; color: white; outline: none; transition: 0.2s;
+            margin-bottom: 20px; font-size: 16px;
         }
-        form {
-            width: 300px;
-            padding: 20px;
-            border: 1px solid #2F3336;
-            border-radius: 5px;
-            background-color: #15181B;
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            box-sizing: border-box;
-            border: 1px solid #38444D;
-            background-color: #000000;
-            color: #E7E9EA;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #1DA1F2;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 9999px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .error {
-            color: #F4212E;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
+        .form-control:focus { border-color: #1D9BF0; box-shadow: 0 0 0 1px #1D9BF0; }
     </style>
 </head>
-<body>
-<h2>🚀 X.com 회원가입</h2>
+<body class="flex justify-center items-center h-screen modal-bg">
 
-<div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+<div class="w-full max-w-[600px] bg-black rounded-2xl shadow-2xl p-12 relative flex flex-col h-auto max-h-[90vh]">
 
-<form th:action="@{/users/signup}" method="post" th:object="${signupRequest}">
-    <div>
-        <label for="username" style="color: #71767B;">사용자 이름 (Username):</label>
-        <input type="text" id="username" th:field="*{username}" required>
-    </div>
-    <div>
-        <label for="email" style="color: #71767B;">이메일 (Email):</label>
-        <input type="text" id="email" th:field="*{email}" required>
-    </div>
-    <div>
-        <label for="password" style="color: #71767B;">비밀번호 (Password):</label>
-        <input type="password" id="password" th:field="*{password}" required>
-    </div>
-    <button type="submit">가입하기</button>
-</form>
+    <a th:href="@{/}" class="absolute top-4 left-4 p-2 rounded-full hover:bg-white/10 transition cursor-pointer">
+        <i class="fa-solid fa-xmark text-xl text-white"></i>
+    </a>
 
-<p style="margin-top: 20px; color: #71767B;">
-    이미 계정이 있으신가요?
-    <a th:href="@{/users/login}" style="color: #1DA1F2; text-decoration: none;">로그인</a>
-</p>
+    <div class="flex justify-center mb-8">
+        <i class="fa-brands fa-x-twitter text-3xl text-white"></i>
+    </div>
+
+    <h2 class="text-3xl font-bold mb-8 text-white">계정을 생성하세요</h2>
+
+    <div th:if="${errorMessage}" class="text-red-500 text-sm mb-4 bg-red-500/10 p-3 rounded">
+        <i class="fa-solid fa-circle-exclamation mr-1"></i> <span th:text="${errorMessage}"></span>
+    </div>
+
+    <form th:action="@{/users/signup}" method="post" th:object="${signupRequest}" class="flex flex-col flex-1">
+
+        <input type="text" th:field="*{username}" placeholder="이름" class="form-control" required>
+        <input type="text" th:field="*{email}" placeholder="이메일" class="form-control" required>
+        <input type="password" th:field="*{password}" placeholder="비밀번호" class="form-control" required>
+
+        <div class="mt-auto">
+            <button type="submit" class="w-full bg-white text-black font-bold py-3.5 rounded-full text-lg hover:bg-[#D7DBDC] transition mb-6">
+                가입하기
+            </button>
+        </div>
+    </form>
+
+    <div class="text-textSec text-sm">
+        이미 계정이 있으신가요? <a th:href="@{/users/login}" class="text-primary hover:underline ml-1">로그인</a>
+    </div>
+</div>
 
 </body>
 </html>

@@ -1,330 +1,268 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" class="dark">
 <head>
     <meta charset="UTF-8">
-    <title th:text="|${profileUser.username} - X.com Clone|">X.com Clone - Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="|${profileUser.username} (@${profileUser.username}) / X|">Profile - X</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" th:href="@{/style1.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1D9BF0',
+                        dark: '#000000',
+                        darkHover: '#181818',
+                        grayBorder: '#2F3336',
+                        textMain: '#E7E9EA',
+                        textSec: '#71767B',
+                        like: '#F91880',
+                        retweet: '#00BA7C'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            background-color: #15202B;
-            color: #E7E9EA;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-        }
-        .profile-container {
-            width: 100%;
-            max-width: 600px;
-            background-color: #15202B;
-            border-left: 1px solid #38444D;
-            border-right: 1px solid #38444D;
-            min-height: 100vh;
-        }
-        .header {
-            padding: 15px;
-            border-bottom: 1px solid #38444D;
-            font-size: 20px;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background-color: #15202B;
-        }
+        body { background-color: black; color: #E7E9EA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .profile-header-img { width: 134px; height: 134px; border: 4px solid black; margin-top: -67px; background-color: #333; }
 
-        .profile-image-large {
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            border: 4px solid #15202B;
-            object-fit: cover;
-            margin-top: -65px;
-        }
-
-        .action-button-small {
-            background-color: transparent;
-            color: #E7E9EA;
-            border: 1px solid #38444D;
-            padding: 8px 16px;
-            border-radius: 9999px;
-            font-weight: bold;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .action-button-small:hover {
-            background-color: #0E1418;
-        }
-
-        .text-secondary {
-            color: #8B98A5;
-        }
-
-        .post-card-profile {
-            border-bottom: 1px solid #38444D;
-            padding: 15px 0;
-            display: flex;
-        }
-        .post-info-profile {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        /* ✅ 팔로워/팔로잉 카운트 버튼 스타일 */
-        .follow-count-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 14px;
-            color: #E7E9EA;
-            cursor: pointer;
-        }
-        .follow-count-btn span.number {
-            font-weight: bold;
-        }
-        .follow-count-btn:hover {
-            text-decoration: underline;
-        }
-
-        /* 리트윗 표시 스타일 */
-        .retweet-indicator {
-            color: #1DA1F2; /* X.com (Twitter) Blue */
-            font-size: 13px;
-            margin-bottom: 5px;
-            padding-left: 55px; /* 프로필 이미지 공간 확보 */
-        }
-        .retweet-indicator svg {
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
+        /* 탭 활성화 스타일 */
+        .tab-active { color: #E7E9EA; border-bottom: 4px solid #1D9BF0; }
+        .tab-inactive { color: #71767B; }
+        .tab-inactive:hover { background-color: rgba(231, 233, 234, 0.1); }
     </style>
 </head>
-<body>
+<body class="overflow-y-scroll">
 
-<div class="profile-container">
-    <div class="header">
-        <span th:text="${profileUser.username}">Username</span>
-        <div class="text-sm font-normal text-secondary">@<span th:text="${profileUser.username}">Username</span></div>
-    </div>
+<div class="flex justify-center min-h-screen">
 
-    <div class="profile-banner" style="height: 180px; background-color: transparent;">
-    </div>
-
-    <div style="padding: 0 20px;">
-
-        <div class="flex justify-between items-start mb-4">
-            <img th:src="${profileUser.profileImageUrl ?: '/images/default-profile.png'}"
-                 alt="Profile Image"
-                 class="profile-image-large">
-
-            <!-- 내 프로필이면 프로필 수정 버튼 -->
-            <div th:if="${session.currentUser != null and session.currentUser.userId == profileUser.userId}"
-                 style="margin-top: 10px;">
-                <a th:href="@{/users/profile/edit}"
-                   class="action-button-small">
-                    프로필 수정
+    <header class="hidden sm:flex flex-col items-end pr-4 w-[80px] xl:w-[275px]">
+        <div class="fixed top-0 h-full w-[80px] xl:w-[275px] py-2 px-2">
+            <a th:href="@{/}" class="flex items-center justify-center xl:justify-start w-12 h-12 rounded-full hover:bg-darkHover transition mb-2 xl:pl-3">
+                <i class="fa-brands fa-x-twitter text-3xl text-white"></i>
+            </a>
+            <nav class="space-y-1">
+                <a th:href="@{/}" class="flex items-center gap-4 px-4 py-3 rounded-full hover:bg-darkHover transition w-fit">
+                    <i class="fa-solid fa-house text-2xl"></i>
+                    <span class="hidden xl:block text-xl font-bold">홈</span>
                 </a>
-            </div>
+                <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-full hover:bg-darkHover transition w-fit">
+                    <i class="fa-regular fa-user text-2xl"></i>
+                    <span class="hidden xl:block text-xl font-bold">프로필</span>
+                </a>
+            </nav>
+        </div>
+    </header>
 
-            <!-- 다른 사람 프로필이면 팔로우/언팔로우 버튼 -->
-            <div th:if="${session.currentUser != null and session.currentUser.userId != profileUser.userId}"
-                 style="margin-top: 10px;">
-                <form th:if="${!isFollowing}"
-                      th:action="@{'/users/profile/' + ${profileUser.username} + '/follow'}"
-                      method="post">
-                    <button type="submit" class="action-button-small">
-                        팔로우
-                    </button>
-                </form>
-                <form th:if="${isFollowing}"
-                      th:action="@{'/users/profile/' + ${profileUser.username} + '/unfollow'}"
-                      method="post">
-                    <button type="submit" class="action-button-small">
-                        언팔로우
-                    </button>
-                </form>
+    <main class="w-full max-w-[600px] border-x border-grayBorder min-h-screen relative">
+
+        <div class="sticky top-0 z-10 bg-black/80 backdrop-blur-md px-4 py-1 flex items-center gap-6 border-b border-grayBorder h-[53px]">
+            <a th:href="@{/}" class="p-2 rounded-full hover:bg-white/10 transition cursor-pointer">
+                <i class="fa-solid fa-arrow-left text-white"></i>
+            </a>
+            <div class="flex flex-col">
+                <span class="font-bold text-lg leading-5" th:text="${profileUser.username}">Username</span>
+                <span class="text-xs text-textSec" th:text="|${timelineItems.size()} posts|">0 posts</span>
             </div>
         </div>
 
-        <h3 class="text-2xl font-bold mb-1" th:text="${profileUser.username}">Display Name</h3>
-        <p class="text-sm mb-2 text-secondary">@<span th:text="${profileUser.username}">Username</span></p>
+        <div class="h-[200px] bg-[#333639]"></div>
 
-        <p th:if="${profileUser.bio != null and profileUser.bio != ''}"
-           class="mb-2" th:text="${profileUser.bio}"></p>
-        <p th:unless="${profileUser.bio != null and profileUser.bio != ''}"
-           class="mb-2 text-secondary">작성된 소개가 없습니다.</p>
+        <div class="px-4 pb-4 relative">
+            <div class="flex justify-between items-start mb-3">
+                <img th:src="${profileUser.profileImageUrl ?: '/images/default_profile.png'}"
+                     class="rounded-full object-cover profile-header-img">
 
-        <p class="text-sm mb-2 text-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                 stroke-width="1.5" stroke="currentColor"
-                 style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5" />
-            </svg>
-            가입일: <span th:text="${#temporals.format(profileUser.createdAt, 'yyyy년 M월')}">2023년 1월</span>
-        </p>
+                <div class="mt-3">
+                    <a th:if="${session.currentUser != null and session.currentUser.userId == profileUser.userId}"
+                       th:href="@{/users/profile/edit}"
+                       class="border border-grayBorder font-bold px-4 py-1.5 rounded-full hover:bg-white/10 transition text-sm">
+                        프로필 수정
+                    </a>
 
-        <!-- ✅ 팔로잉 / 팔로워 숫자 + 클릭 시 모달 오픈 -->
-        <div class="flex gap-4 mb-4 text-sm">
-            <button type="button"
-                    class="follow-count-btn"
-                    onclick="openFollowModal('following')">
-                <span class="number" th:text="${followingCount}">0</span>
-                <span class="text-secondary">팔로잉</span>
-            </button>
-
-            <button type="button"
-                    class="follow-count-btn"
-                    onclick="openFollowModal('followers')">
-                <span class="number" th:text="${followerCount}">0</span>
-                <span class="text-secondary">팔로워</span>
-            </button>
-        </div>
-
-        <hr style="border-color: #38444D; margin: 20px 0;">
-
-        <h4 class="text-xl font-bold mb-4">게시물</h4>
-
-        <!-- 📌 posts 대신 timelineItems를 사용하도록 수정 -->
-        <div th:if="${timelineItems == null or timelineItems.isEmpty()}"
-             class="no-posts" style="padding: 10px 0; text-align: center;">
-            <p class="text-secondary">작성 또는 리트윗된 게시물이 없습니다.</p>
-        </div>
-
-        <!-- 📌 timelineItems를 순회하며 리트윗 여부에 따라 다르게 렌더링 -->
-        <div th:each="item : ${timelineItems}" class="post-card-profile">
-            <!-- 1. 리트윗 표시 (item.isRetweet == true일 경우) -->
-            <!-- actionUser 필드를 사용하여 리트윗한 사용자를 표시합니다. -->
-            <div th:if="${item.isRetweet}" class="retweet-indicator">
-                <!-- 리트윗 아이콘 (SVG) -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75-6.75M4.5 12l6.75 6.75" />
-                </svg>
-                <span th:text="${item.actionUser.username}">Username</span>님이 리트윗했습니다.
+                    <div th:if="${session.currentUser != null and session.currentUser.userId != profileUser.userId}">
+                        <form th:if="${!isFollowing}" th:action="@{'/users/profile/' + ${profileUser.username} + '/follow'}" method="post">
+                            <button type="submit" class="bg-white text-black font-bold px-4 py-1.5 rounded-full hover:bg-gray-200 transition text-sm">
+                                팔로우
+                            </button>
+                        </form>
+                        <form th:if="${isFollowing}" th:action="@{'/users/profile/' + ${profileUser.username} + '/unfollow'}" method="post">
+                            <button type="submit" class="border border-grayBorder text-white font-bold px-4 py-1.5 rounded-full hover:border-red-600 hover:text-red-600 hover:bg-red-600/10 transition text-sm group">
+                                <span class="group-hover:hidden">팔로잉</span>
+                                <span class="hidden group-hover:inline">언팔로우</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <!-- 2. 게시물 본문 영역 -->
-            <!-- item.post 대신 item.originalPost를 사용하도록 수정 -->
-            <div th:with="postContent=${item.originalPost}" style="display: flex; flex-grow: 1; padding-top: 5px;">
-                <div style="width: 48px; min-width: 48px; margin-right: 10px;">
-                    <img th:src="${postContent.user.profileImageUrl ?: '/images/default-profile.png'}"
-                         alt="Profile"
-                         class="w-12 h-12 rounded-full object-cover">
+            <div class="mb-3">
+                <h1 class="font-extrabold text-xl leading-6" th:text="${profileUser.username}">Display Name</h1>
+                <div class="text-textSec text-[15px]">@<span th:text="${profileUser.username}">username</span></div>
+            </div>
+
+            <div class="mb-3 text-[15px] whitespace-pre-wrap">
+                <span th:if="${profileUser.bio != null and profileUser.bio != ''}" th:text="${profileUser.bio}"></span>
+                <span th:unless="${profileUser.bio != null and profileUser.bio != ''}" class="text-textSec">소개가 없습니다.</span>
+            </div>
+
+            <div class="flex items-center gap-4 text-textSec text-[15px] mb-3">
+                <div class="flex items-center gap-1">
+                    <i class="fa-regular fa-calendar-days"></i>
+                    <span>가입일: <span th:text="${#temporals.format(profileUser.createdAt, 'yyyy년 M월')}">2023년 1월</span></span>
+                </div>
+            </div>
+
+            <div class="flex gap-5 text-[14px]">
+                <button type="button" onclick="openFollowModal('following')" class="hover:underline decoration-1 cursor-pointer">
+                    <span class="font-bold text-white" th:text="${followingCount}">0</span>
+                    <span class="text-textSec">팔로잉</span>
+                </button>
+                <button type="button" onclick="openFollowModal('followers')" class="hover:underline decoration-1 cursor-pointer">
+                    <span class="font-bold text-white" th:text="${followerCount}">0</span>
+                    <span class="text-textSec">팔로워</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex border-b border-grayBorder mt-2">
+            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer font-bold text-white border-b-4 border-primary relative">
+                게시물
+            </div>
+            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
+                답글
+            </div>
+            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
+                미디어
+            </div>
+            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
+                마음에 들어요
+            </div>
+        </div>
+
+        <div th:if="${timelineItems == null or timelineItems.isEmpty()}" class="p-8 text-center">
+            <h3 class="font-bold text-2xl mb-2">아직 게시물이 없어요</h3>
+            <p class="text-textSec text-sm">게시물을 작성하면 여기에 표시됩니다.</p>
+        </div>
+
+        <div th:each="item : ${timelineItems}" class="border-b border-grayBorder hover:bg-white/5 transition p-4 cursor-pointer relative"
+             th:with="postContent=${item.originalPost}">
+
+            <div th:if="${item.isRetweet}" class="text-textSec text-xs font-bold flex items-center gap-2 mb-1 ml-8">
+                <i class="fa-solid fa-retweet"></i>
+                <span th:text="${item.actionUser.username}">User</span>님이 리트윗했습니다
+            </div>
+
+            <div class="flex gap-3">
+                <div class="flex-shrink-0">
+                    <img th:src="${postContent.user.profileImageUrl ?: '/images/default_profile.png'}"
+                         class="w-10 h-10 rounded-full object-cover bg-gray-700">
                 </div>
 
-                <div style="flex-grow: 1;">
-                    <div class="post-info-profile">
-                        <a th:href="@{'/users/profile/' + ${postContent.user.username}}">
-                            <span th:text="${postContent.user.username}" class="font-bold hover:underline" style="color: #E7E9EA;">Display Name</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1 text-[15px]">
+                        <a th:href="@{'/users/profile/' + ${postContent.user.username}}" class="font-bold hover:underline truncate text-white">
+                            <span th:text="${postContent.user.username}">Display Name</span>
                         </a>
-                        <span class="text-secondary" style="font-weight: normal; margin-left: 5px;">
-                            @<span th:text="${postContent.user.username}">Username</span>
-                        </span>
-                        <span class="text-secondary" style="margin-left: 5px;">·</span>
-                        <span th:text="${#temporals.format(postContent.createdAt, 'HH:mm')}"
-                              class="text-secondary" style="margin-left: 5px;">시간</span>
+                        <span class="text-textSec truncate">@<span th:text="${postContent.user.username}">username</span></span>
+                        <span class="text-textSec">·</span>
+                        <span class="text-textSec text-sm" th:text="${#temporals.format(postContent.createdAt, 'MM월 dd일')}">Date</span>
                     </div>
 
-                    <div class="post-content mb-2">
-                        <p th:text="${postContent.content}" style="color: #E7E9EA;">여기에 포스트 내용이 들어갑니다.</p>
+                    <p class="text-white mt-0.5 text-[15px] whitespace-pre-wrap leading-snug" th:text="${postContent.content}"></p>
+
+                    <div th:if="${postContent.mediaList != null and not #lists.isEmpty(postContent.mediaList)}" class="mt-3">
+                        <img th:each="media : ${postContent.mediaList}" th:src="@{${media.fileUrl}}"
+                             class="rounded-2xl border border-grayBorder w-full object-cover max-h-[500px]">
                     </div>
 
-                    <div class="post-images" th:if="${postContent.mediaList != null and not #lists.isEmpty(postContent.mediaList)}">
-                        <img th:each="media : ${postContent.mediaList}"
-                             th:src="@{${media.fileUrl}}"
-                             alt=""
-                             style="max-width: 100%; border-radius: 10px; margin-top: 5px;">
-                    </div>
-
-                    <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 14px; color: #8B98A5;">
-                        <!-- ✅ 리트윗 횟수 표시 -->
-                        <span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75-6.75M4.5 12l6.75 6.75" />
-                            </svg>
+                    <div class="flex justify-between mt-3 text-textSec max-w-md pr-4 text-sm">
+                        <div class="group flex items-center gap-1 hover:text-primary transition">
+                            <i class="fa-regular fa-comment p-2 rounded-full group-hover:bg-primary/10"></i>
+                            <span th:text="${#lists.size(postContent.replies)}">0</span>
+                        </div>
+                        <div class="group flex items-center gap-1 hover:text-retweet transition">
+                            <i class="fa-solid fa-retweet p-2 rounded-full group-hover:bg-retweet/10"></i>
                             <span th:text="${item.retweetCount}">0</span>
-                        </span>
-                        <span>❤️ <span th:text="${#lists.size(postContent.likes)}">0</span></span>
-                        <span>💬 <span th:text="${#lists.size(postContent.replies)}">0</span></span>
+                        </div>
+                        <div class="group flex items-center gap-1 hover:text-like transition">
+                            <i class="fa-regular fa-heart p-2 rounded-full group-hover:bg-like/10"></i>
+                            <span th:text="${#lists.size(postContent.likes)}">0</span>
+                        </div>
+                        <div class="group flex items-center gap-1 hover:text-primary transition">
+                            <i class="fa-solid fa-chart-simple p-2 rounded-full group-hover:bg-primary/10"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="mt-10 mb-6">
-            <a th:href="@{/}" class="text-blue-500 hover:underline">← 홈으로 돌아가기</a>
+    </main>
+
+    <div class="hidden lg:block w-[350px] pl-8 py-4 sticky top-0 h-screen">
+        <div class="bg-[#16181C] rounded-2xl overflow-hidden pt-3 mb-4">
+            <h3 class="font-extrabold text-xl px-4 mb-3">팔로우 추천</h3>
+            <div class="hover:bg-white/5 transition px-4 py-3 cursor-pointer flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gray-600"></div>
+                <div class="flex-1">
+                    <div class="font-bold">멋진 개발자</div>
+                    <div class="text-textSec text-sm">@cool_dev</div>
+                </div>
+                <button class="bg-white text-black px-4 py-1.5 rounded-full font-bold text-sm">팔로우</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- ✅ 팔로워/팔로잉 모달 -->
-<div id="followModal"
-     class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-    <div class="bg-[#15202B] border border-[#38444D] rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
-        <!-- 상단 탭 + 닫기 -->
-        <div class="flex items-center justify-between border-b border-[#38444D] px-4 py-3">
-            <div class="flex gap-4">
-                <button id="tab-followers"
-                        type="button"
-                        class="text-sm font-bold"
-                        onclick="showFollowTab('followers')">
-                    팔로워
-                </button>
-                <button id="tab-following"
-                        type="button"
-                        class="text-sm font-bold text-secondary"
-                        onclick="showFollowTab('following')">
-                    팔로잉
-                </button>
-            </div>
-            <button type="button"
-                    class="text-xl text-secondary"
-                    onclick="closeFollowModal()">
-                ✕
+<div id="followModal" class="fixed inset-0 bg-white/10 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-black w-full max-w-[600px] h-[600px] rounded-2xl flex flex-col relative overflow-hidden shadow-2xl border border-grayBorder">
+
+        <div class="px-4 py-3 flex items-center justify-between border-b border-grayBorder">
+            <h2 class="text-xl font-bold">팔로우 정보</h2>
+            <button onclick="closeFollowModal()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
 
-        <!-- 리스트 영역 -->
-        <div class="overflow-y-auto">
-            <!-- 팔로워 목록 -->
-            <div id="followersList">
-                <div th:if="${#lists.isEmpty(followers)}"
-                     class="px-4 py-4 text-center text-secondary text-sm">
-                    아직 팔로워가 없습니다.
-                </div>
+        <div class="flex border-b border-grayBorder">
+            <button id="tab-followers" onclick="showFollowTab('followers')" class="flex-1 py-3 font-bold hover:bg-white/10 transition border-b-4 border-transparent text-textSec">
+                팔로워
+            </button>
+            <button id="tab-following" onclick="showFollowTab('following')" class="flex-1 py-3 font-bold hover:bg-white/10 transition border-b-4 border-transparent text-textSec">
+                팔로잉
+            </button>
+        </div>
 
-                <a th:each="f : ${followers}"
-                   th:href="@{'/users/profile/' + ${f.follower.username}}"
-                   class="flex items-center gap-3 px-4 py-3 hover:bg-[#1E2732] cursor-pointer no-underline">
-                    <img th:src="${f.follower.profileImageUrl ?: '/images/default-profile.png'}"
-                         alt="Follower profile"
-                         class="w-10 h-10 rounded-full object-cover">
+        <div class="flex-1 overflow-y-auto p-0">
+            <div id="followersList" class="hidden">
+                <div th:if="${#lists.isEmpty(followers)}" class="p-8 text-center text-textSec">
+                    <p class="text-lg font-bold">아직 팔로워가 없습니다.</p>
+                </div>
+                <a th:each="f : ${followers}" th:href="@{'/users/profile/' + ${f.follower.username}}"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition">
+                    <img th:src="${f.follower.profileImageUrl ?: '/images/default_profile.png'}" class="w-10 h-10 rounded-full object-cover">
                     <div>
-                        <div class="text-sm font-bold" th:text="${f.follower.username}">username</div>
-                        <div class="text-xs text-secondary">@<span th:text="${f.follower.username}">username</span></div>
+                        <div class="font-bold" th:text="${f.follower.username}">username</div>
+                        <div class="text-textSec text-sm">@<span th:text="${f.follower.username}">handle</span></div>
                     </div>
                 </a>
             </div>
 
-            <!-- 팔로잉 목록 -->
             <div id="followingList" class="hidden">
-                <div th:if="${#lists.isEmpty(following)}"
-                     class="px-4 py-4 text-center text-secondary text-sm">
-                    아직 팔로잉 중인 사용자가 없습니다.
+                <div th:if="${#lists.isEmpty(following)}" class="p-8 text-center text-textSec">
+                    <p class="text-lg font-bold">아직 팔로잉이 없습니다.</p>
                 </div>
-
-                <a th:each="f : ${following}"
-                   th:href="@{'/users/profile/' + ${f.following.username}}"
-                   class="flex items-center gap-3 px-4 py-3 hover:bg-[#1E2732] cursor-pointer no-underline">
-                    <img th:src="${f.following.profileImageUrl ?: '/images/default-profile.png'}"
-                         alt="Following profile"
-                         class="w-10 h-10 rounded-full object-cover">
+                <a th:each="f : ${following}" th:href="@{'/users/profile/' + ${f.following.username}}"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition">
+                    <img th:src="${f.following.profileImageUrl ?: '/images/default_profile.png'}" class="w-10 h-10 rounded-full object-cover">
                     <div>
-                        <div class="text-sm font-bold" th:text="${f.following.username}">username</div>
-                        <div class="text-xs text-secondary">@<span th:text="${f.following.username}">username</span></div>
+                        <div class="font-bold" th:text="${f.following.username}">username</div>
+                        <div class="text-textSec text-sm">@<span th:text="${f.following.username}">handle</span></div>
                     </div>
                 </a>
             </div>
@@ -334,16 +272,14 @@
 
 <script>
     function openFollowModal(type) {
-        const modal = document.getElementById('followModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        document.getElementById('followModal').classList.remove('hidden');
+        document.getElementById('followModal').classList.add('flex');
         showFollowTab(type);
     }
 
     function closeFollowModal() {
-        const modal = document.getElementById('followModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        document.getElementById('followModal').classList.add('hidden');
+        document.getElementById('followModal').classList.remove('flex');
     }
 
     function showFollowTab(type) {
@@ -352,20 +288,22 @@
         const tabFollowers = document.getElementById('tab-followers');
         const tabFollowing = document.getElementById('tab-following');
 
+        // 초기화
+        followersList.classList.add('hidden');
+        followingList.classList.add('hidden');
+        tabFollowers.classList.remove('border-primary', 'text-white');
+        tabFollowing.classList.remove('border-primary', 'text-white');
+        tabFollowers.classList.add('text-textSec');
+        tabFollowing.classList.add('text-textSec');
+
         if (type === 'followers') {
             followersList.classList.remove('hidden');
-            followingList.classList.add('hidden');
-
-            tabFollowers.classList.remove('text-secondary');
-            tabFollowers.classList.add('text-white');
-            tabFollowing.classList.add('text-secondary');
+            tabFollowers.classList.add('border-primary', 'text-white');
+            tabFollowers.classList.remove('text-textSec');
         } else {
-            followersList.classList.add('hidden');
             followingList.classList.remove('hidden');
-
-            tabFollowing.classList.remove('text-secondary');
-            tabFollowing.classList.add('text-white');
-            tabFollowers.classList.add('text-secondary');
+            tabFollowing.classList.add('border-primary', 'text-white');
+            tabFollowing.classList.remove('text-textSec');
         }
     }
 </script>
