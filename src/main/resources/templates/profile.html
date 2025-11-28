@@ -35,17 +35,13 @@
             height: 100px;
             background-color: #333;
         }
-
-        /* 탭 활성화 스타일 */
-        .tab-active { color: #E7E9EA; border-bottom: 4px solid #1D9BF0; }
-        .tab-inactive { color: #71767B; }
-        .tab-inactive:hover { background-color: rgba(231, 233, 234, 0.1); }
     </style>
 </head>
 <body class="overflow-y-scroll">
 
 <div class="flex justify-center min-h-screen">
 
+    <!-- 왼쪽 사이드바 -->
     <header class="hidden sm:flex flex-col items-end pr-4 w-[80px] xl:w-[275px]">
         <div class="fixed top-0 h-full w-[80px] xl:w-[275px] py-2 px-2">
             <a th:href="@{/}" class="flex items-center justify-center xl:justify-start w-12 h-12 rounded-full hover:bg-darkHover transition mb-2 xl:pl-3">
@@ -64,8 +60,10 @@
         </div>
     </header>
 
+    <!-- 메인 컨텐츠 -->
     <main class="w-full max-w-[600px] border-x border-grayBorder min-h-screen relative">
 
+        <!-- 상단 헤더 -->
         <div class="sticky top-0 z-10 bg-black/80 backdrop-blur-md px-4 py-1 flex items-center gap-6 border-b border-grayBorder h-[53px]">
             <a th:href="@{/}" class="p-2 rounded-full hover:bg-white/10 transition cursor-pointer">
                 <i class="fa-solid fa-arrow-left text-white"></i>
@@ -76,8 +74,8 @@
             </div>
         </div>
 
+        <!-- 프로필 정보 영역 -->
         <div class="px-4 pt-6 pb-4 relative">
-
             <div class="flex justify-between items-center mb-4">
                 <img th:src="${profileUser.profileImageUrl ?: '/images/default_profile.png'}"
                      class="rounded-full object-cover profile-header-img">
@@ -134,21 +132,16 @@
             </div>
         </div>
 
+        <!-- 탭 메뉴 (단일 탭으로 수정) -->
         <div class="flex border-b border-grayBorder mt-2">
-            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer font-bold text-white border-b-4 border-primary relative">
+            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer transition relative font-bold text-white">
                 게시물
-            </div>
-            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
-                답글
-            </div>
-            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
-                미디어
-            </div>
-            <div class="flex-1 text-center py-3 hover:bg-white/10 cursor-pointer text-textSec font-medium">
-                마음에 들어요
+                <!-- 활성 상태 표시 -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full"></div>
             </div>
         </div>
 
+        <!-- 게시물 목록 -->
         <div th:if="${timelineItems == null or timelineItems.isEmpty()}" class="p-8 text-center">
             <h3 class="font-bold text-2xl mb-2">아직 게시물이 없어요</h3>
             <p class="text-textSec text-sm">게시물을 작성하면 여기에 표시됩니다.</p>
@@ -157,6 +150,7 @@
         <div th:each="item : ${timelineItems}" class="border-b border-grayBorder hover:bg-white/5 transition p-4 cursor-pointer relative"
              th:with="postContent=${item.originalPost}">
 
+            <!-- 리트윗일 경우 표시 -->
             <div th:if="${item.isRetweet}" class="text-textSec text-xs font-bold flex items-center gap-2 mb-1 ml-8">
                 <i class="fa-solid fa-retweet"></i>
                 <span th:text="${item.actionUser.username}">User</span>님이 리트윗했습니다
@@ -197,9 +191,6 @@
                             <i class="fa-regular fa-heart p-2 rounded-full group-hover:bg-like/10"></i>
                             <span th:text="${#lists.size(postContent.likes)}">0</span>
                         </div>
-                        <div class="group flex items-center gap-1 hover:text-primary transition">
-                            <i class="fa-solid fa-chart-simple p-2 rounded-full group-hover:bg-primary/10"></i>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -207,21 +198,9 @@
 
     </main>
 
-    <div class="hidden lg:block w-[350px] pl-8 py-4 sticky top-0 h-screen">
-        <div class="bg-[#16181C] rounded-2xl overflow-hidden pt-3 mb-4">
-            <h3 class="font-extrabold text-xl px-4 mb-3">팔로우 추천</h3>
-            <div class="hover:bg-white/5 transition px-4 py-3 cursor-pointer flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gray-600"></div>
-                <div class="flex-1">
-                    <div class="font-bold">멋진 개발자</div>
-                    <div class="text-textSec text-sm">@cool_dev</div>
-                </div>
-                <button class="bg-white text-black px-4 py-1.5 rounded-full font-bold text-sm">팔로우</button>
-            </div>
-        </div>
-    </div>
 </div>
 
+<!-- 팔로워/팔로잉 모달 (이전 코드와 동일, 생략 가능하지만 완전성을 위해 포함) -->
 <div id="followModal" class="fixed inset-0 bg-white/10 backdrop-blur-sm hidden items-center justify-center z-50">
     <div class="bg-black w-full max-w-[600px] h-[600px] rounded-2xl flex flex-col relative overflow-hidden shadow-2xl border border-grayBorder">
         <div class="px-4 py-3 flex items-center justify-between border-b border-grayBorder">
